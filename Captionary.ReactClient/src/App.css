@@ -1,42 +1,5 @@
-@import 'https://fonts.googleapis.com/css?family=Open+Sans';
-
-html, body, #captionary-goes-here, .App {
-  height: 100%;
-}
-
-body {
-  font-family: 'Open Sans', sans-serif;
-  font-size: 16px;
-  font-weight: normal;
-  line-height: 1.5;
-  color: #666;
-  background-color: #eee;
-}
-
-.app {
+.captionary-app {
   display: flex;
-  justify-content: flex-end;
-  overflow:hidden;
-  height: 100vh;
-  width: 100vw;
-}
-
-.app-game {
-  flex: 1 1 75vw;
+  flex: 1;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-}
-
-.app-game > .caption-card-list {
-  flex: 1;
-}
-
-.app-game > .image-container {
-  flex: 1;
-}
-
-.appgame .app-chat {
-  flex: 1 2 25vw;
 }

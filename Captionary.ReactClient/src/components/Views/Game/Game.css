@@ -1,0 +1,26 @@
+.game-container {
+    display: flex;
+    justify-content: flex-end;
+    overflow:hidden;
+    flex: 1;
+  }
+
+.game {
+flex: 1 1 75vw;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+width: 100%;
+}
+
+.game > .caption-card-list {
+flex: 1;
+}
+
+.game > .image-container {
+flex: 1;
+}
+
+/* .game .app-chat {
+flex: 1 2 25vw;
+} */
