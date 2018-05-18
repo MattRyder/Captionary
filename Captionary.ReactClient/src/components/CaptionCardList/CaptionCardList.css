@@ -1,0 +1,20 @@
+.caption-card-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.caption-card-list > .caption-card {
+    margin-top: 10%;
+    flex: 1 1 0;
+}
+
+.caption-card-list > .caption-card.is-selected {
+    animation: cardSelected 0.5s;
+    animation-fill-mode: forwards;
+}
+
+@keyframes cardSelected {
+    from { margin-top: 10%; }
+    to { margin-top: 5%; }
+}

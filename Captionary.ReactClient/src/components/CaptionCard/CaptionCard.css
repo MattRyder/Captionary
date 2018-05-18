@@ -1,0 +1,21 @@
+.caption-card {  
+    background-color: #222;
+    border-radius: 10px;
+    box-shadow: 0 0 32px rgba(0, 0, 0, 0.5);    
+    color: #FFF;
+    height: 100%;
+    width: 100%;
+    margin: 1em;
+}
+
+.caption-card.is-hovered {
+    background-color: #11a135;
+}
+
+.caption-card.is-selected {
+    background-color: #0c7326;    
+}
+
+.caption-card p {
+    padding: 1em;
+}
