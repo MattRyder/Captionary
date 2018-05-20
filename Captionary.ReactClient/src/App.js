@@ -1,8 +1,8 @@
 import React from 'react';
 import './App.css';
 
-import Navigation from './components/Layout/Navigation/Navigation';
-import ContentRouter from './components/Layout/ContentRouter/ContentRouter';
+import Navigation from './components/Layout/Navigation';
+import ContentRouter from './components/Layout/ContentRouter';
 
 class App extends React.Component {
   render() {

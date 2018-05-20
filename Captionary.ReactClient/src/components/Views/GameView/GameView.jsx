@@ -1,13 +1,13 @@
 import React from 'react';
 
 import ImageContainer from "../../Game/ImageContainer/ImageContainer";
-import CaptionInput from "../../Game/CaptionInput/CaptionInput"
+import CaptionInputForm from "../../Game/CaptionInputForm/CaptionInputForm";
 import CaptionCardList from "../../Game/CaptionCardList/CaptionCardList";
 import ChatContainer from "../../Game/ChatContainer/ChatContainer";
 
-import './Game.css'
+import './GameView.css'
 
-export default class Game extends React.Component {
+export default class GameView extends React.Component {
     constructor(props) {
         super(props);
 
@@ -22,7 +22,7 @@ export default class Game extends React.Component {
                 <div className="game">
                     <CaptionCardList/>
                     <ImageContainer imageCentered={true} />
-                    <CaptionInput />
+                    <CaptionInputForm />
                 </div>
                 <div className="game-chat">
                     <ChatContainer name={"Matt"} />

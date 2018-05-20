@@ -1,10 +1,11 @@
-import React from 'react'
-import PropTypes from 'prop-types'
-import { Button } from 'reactstrap'
-import { ChatFeed, Message } from 'react-chat-ui'
-import { HubConnectionBuilder, LogLevel } from '@aspnet/signalr'
+import React from 'react';
+import PropTypes from 'prop-types';
+import { Button } from 'reactstrap';
+import { ChatFeed, Message } from 'react-chat-ui';
+import { HubConnectionBuilder, LogLevel } from '@aspnet/signalr';
+import Input from '../../Input/Input';
 
-import './ChatContainer.css'
+import './ChatContainer.css';
 
 const KEY_ENTER = 13;
 const SERVER_HOST = process.env.REACT_APP_SIGNALR_HOST + "hub/chat";
@@ -16,11 +17,11 @@ const SERVER_ACTION_RECEIVE_MESSAGE = "ReceiveMessage";
 /**
  * A component that renders an area for users to chat
  */
-class ChatContainer extends React.Component {
-    
+export default class ChatContainer extends React.Component {
+
     constructor(props) {
         super(props)
-        
+
         this.state = {
             messageIdIdx: 0,
             messageText: "",
@@ -39,7 +40,7 @@ class ChatContainer extends React.Component {
             .withUrl(SERVER_HOST)
             .configureLogging(LogLevel.Trace)
             .build();
-            
+
         this.setState({ hubConnection }, () => {
             this.state.hubConnection
                 .start()
@@ -48,13 +49,13 @@ class ChatContainer extends React.Component {
             this.state.hubConnection.on(SERVER_ACTION_PLAYER_CONNECTED, (playerName) => {
                 console.log("Player Connected: " + playerName);
             });
-
+            
             this.state.hubConnection.on(SERVER_ACTION_PLAYER_DISCONNECTED, (playerName) => {
                 console.log("Player Disconnected: " + playerName);
             });
 
             this.state.hubConnection.on(SERVER_ACTION_RECEIVE_MESSAGE, (senderName, message) => {
-               this.receiveMessage(senderName, message); 
+                this.receiveMessage(senderName, message);
             });
         })
     }
@@ -64,7 +65,7 @@ class ChatContainer extends React.Component {
     }
 
     handleInputKeyPress(e) {
-        if(e.charCode === KEY_ENTER) {
+        if (e.charCode === KEY_ENTER) {
             this.sendMessage();
         }
     }
@@ -74,15 +75,15 @@ class ChatContainer extends React.Component {
     }
 
     sendMessage() {
-        if(this.state.messageText.length <= 0) {
+        if (this.state.messageText.length <= 0) {
             return;
-        } 
+        }
 
         var msg = this.createMessage(this.props.name, this.state.messageText);
 
         this.state.hubConnection
             .invoke(SERVER_ACTION_SEND_MESSAGE, msg)
-            .catch(err => { console.error("Failed to send message: " + err ) });
+            .catch(err => { console.error("Failed to send message: " + err) });
 
         this.setState({ messageText: "" });
     }
@@ -105,27 +106,26 @@ class ChatContainer extends React.Component {
     }
 
     render() {
-      return (
-        <div className='chat-container'>
-            <ChatFeed
-                showSenderName
-                messages={this.state.messages}
-                hasInputField={false}
+        return (
+            <div className='chat-container'>
+                <ChatFeed
+                    showSenderName
+                    messages={this.state.messages}
+                    hasInputField={false}
                 />
-            
-            <div className="chat-input">
-                <div className="input-group">
-                    <input type="text" className="form-control"  placeholder="Say..."
-                            value={this.state.messageText}
-                            onFocus={this.handleFocus} onBlur={this.handleBlur}
-                            onKeyPress={this.handleInputKeyPress} onChange={this.handleInputChange} />
+
+                <div className="chat-input">
+                    <Input placeholder="Say..."
+                        onChange={this.handleInputChange}
+                        onKeyPress={this.handleInputKeyPress}
+                        value={this.state.messageText} />
+
                     <span className="input-group-btn">
                         <Button color="primary" onClick={this.handleSubmitClick}>send</Button>
                     </span>
                 </div>
             </div>
-        </div>
-      )
+        )
     }
 }
 
@@ -134,5 +134,3 @@ ChatContainer.propTypes = {
     messages: PropTypes.arrayOf(Message),
     messageIdIdx: PropTypes.number
 }
-
-export default ChatContainer;

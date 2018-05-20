@@ -1,0 +1,57 @@
+/* Pure CSS Input Underline Animation
+ * A PEN BY Mark Holmes - https://codepen.io/SMLMRKHLMS/pen/qxtDw */
+
+.input-container {
+	background-color: #fff;
+	height: 3em;
+	position: relative;
+	margin-top: 1em;
+	margin-bottom: 1em;
+}
+
+.input {
+	position: absolute;
+	background-color: transparent;
+	border: none;
+	border-bottom: 1px solid #ccc;
+	color: #555;
+	box-sizing: border-box;
+	font-size: 18px;
+	height: 2em;
+	width: 100%;
+}
+
+.input:focus {
+	outline: none;
+}
+
+.input.form-control {
+	border-radius: 0;
+}
+
+.form-control:focus {
+	outline: 0;
+}
+
+.input::-webkit-input-placeholder {
+	color: #aaa;
+}
+
+.input:focus::-webkit-input-placeholder {
+	color: dodgerblue;
+}
+
+.input:focus+.underline {
+	transform: scale(1);
+}
+
+.underline {
+	background-color: dodgerblue;
+	display: inline-block;
+	height: 2px;
+	position: absolute;
+	top: calc(2em + 3px);
+	transform: scale(0, 1);
+	transition: all 0.25s linear;
+	width: 100%;
+}

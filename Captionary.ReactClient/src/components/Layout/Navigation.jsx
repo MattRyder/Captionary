@@ -31,7 +31,7 @@ export default class Navigation extends React.Component {
         <Collapse isOpen={this.state.isOpen} navbar />
           <Nav>
             <NavItem>
-              <NavLink href="/foo">Foo Link A</NavLink>
+              <NavLink href="/game">Game</NavLink>
             </NavItem>
           </Nav>
       </Navbar>
