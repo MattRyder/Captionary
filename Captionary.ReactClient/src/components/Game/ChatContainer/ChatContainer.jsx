@@ -2,15 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Button } from 'reactstrap';
 import { ChatFeed, Message } from 'react-chat-ui';
-import { HubConnectionBuilder, LogLevel } from '@aspnet/signalr';
 import Input from '../../Input/Input';
 
 import './ChatContainer.css';
 
 const KEY_ENTER = 13;
-const SERVER_HOST = process.env.REACT_APP_SIGNALR_HOST + "hub/chat";
-const SERVER_ACTION_PLAYER_CONNECTED = "PlayerConnected";
-const SERVER_ACTION_PLAYER_DISCONNECTED = "PlayerDisconnected";
+
 const SERVER_ACTION_SEND_MESSAGE = "SendMessage";
 const SERVER_ACTION_RECEIVE_MESSAGE = "ReceiveMessage";
 
@@ -25,39 +22,21 @@ export default class ChatContainer extends React.Component {
         this.state = {
             messageIdIdx: 0,
             messageText: "",
-            messages: [],
-            hubConnection: null
+            messages: []
         }
 
         this.handleSubmitClick = this.handleSubmitClick.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
         this.handleInputKeyPress = this.handleInputKeyPress.bind(this);
         this.sendMessage = this.sendMessage.bind(this);
+        this.receiveMessage = this.receiveMessage.bind(this);
     }
 
     componentWillMount() {
-        const hubConnection = new HubConnectionBuilder()
-            .withUrl(SERVER_HOST)
-            .configureLogging(LogLevel.Trace)
-            .build();
-
-        this.setState({ hubConnection }, () => {
-            this.state.hubConnection
-                .start()
-                .catch(err => console.error("Failed to connect to Chat Server"));
-
-            this.state.hubConnection.on(SERVER_ACTION_PLAYER_CONNECTED, (playerName) => {
-                console.log("Player Connected: " + playerName);
-            });
-            
-            this.state.hubConnection.on(SERVER_ACTION_PLAYER_DISCONNECTED, (playerName) => {
-                console.log("Player Disconnected: " + playerName);
-            });
-
-            this.state.hubConnection.on(SERVER_ACTION_RECEIVE_MESSAGE, (senderName, message) => {
-                this.receiveMessage(senderName, message);
-            });
-        })
+        this.props.hubConnection.on(SERVER_ACTION_RECEIVE_MESSAGE, (message) => {
+            var msg = this.createMessage(message.senderId, message.senderName, message.message);
+            this.receiveMessage(msg);
+        });
     }
 
     handleInputChange(e) {
@@ -79,9 +58,9 @@ export default class ChatContainer extends React.Component {
             return;
         }
 
-        var msg = this.createMessage(this.props.name, this.state.messageText);
+        var msg = this.createMessage(0, this.props.name, this.state.messageText);
 
-        this.state.hubConnection
+        this.props.hubConnection
             .invoke(SERVER_ACTION_SEND_MESSAGE, msg)
             .catch(err => { console.error("Failed to send message: " + err) });
 
@@ -98,8 +77,9 @@ export default class ChatContainer extends React.Component {
         });
     }
 
-    createMessage(senderName, message) {
+    createMessage(id, senderName, message) {
         return new Message({
+            id: id,
             senderName: senderName,
             message: message
         });

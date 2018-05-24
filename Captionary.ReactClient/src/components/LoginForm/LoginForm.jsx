@@ -13,19 +13,26 @@ export default class LoginForm extends React.Component {
     }
 
     this.handleNameChange = this.handleNameChange.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
   }
 
   handleNameChange(e) {
     this.setState({ playerName: e.target.value });
   }
 
+  onSubmit(e) {
+    e.preventDefault();
+    this.props.onSubmit(this.state.playerName);
+  }
+
   render() {
     return (
       <div className="login-form">
           <Input onChange={this.handleNameChange}
-                value={this.state.playerName} 
+                value={this.state.playerName}
                 placeholder="What is your name?" />
-        <Button color='success' block onClick={this.handleLogin}>
+                
+        <Button color='success' block onClick={this.onSubmit}>
           Play
         </Button>
       </div>

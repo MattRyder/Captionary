@@ -34,6 +34,11 @@ namespace Captionary.WebAPI
 
             services.AddMvc();
 
+            services.AddDistributedRedisCache((options) => {
+                options.Configuration = "localhost";
+                options.InstanceName = "StagingCaptionaryInstance";
+            });
+
             services.AddSignalR();
         }
 
@@ -49,7 +54,7 @@ namespace Captionary.WebAPI
 
             app.UseSignalR(routes =>
             {
-                routes.MapHub<ChatHub>("/hub/chat");
+                routes.MapHub<GameHub>("/game");
             });
 
             app.UseMvc();
