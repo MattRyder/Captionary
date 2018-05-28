@@ -7,10 +7,13 @@
     "bootstrap": "^4.0.0-beta.2",
     "jquery": "^1.9.1",
     "prop-types": "^15.6.0",
+    "re-resizable": "^4.4.8",
     "react": "^16.1.1",
     "react-chat-ui": "^0.3.2",
     "react-dom": "^16.1.1",
+    "react-router": "^4.2.0",
     "react-router-dom": "^4.2.2",
+    "react-router-redux": "^5.0.0-alpha.9",
     "react-scripts": "1.0.17",
     "reactstrap": "^5.0.0-alpha.4"
   },
@@ -21,6 +24,10 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "react-cookie": "^2.1.5"
+    "animejs": "^2.2.0",
+    "react-anime": "^2.1.0",
+    "react-cookie": "^2.1.5",
+    "react-redux": "^5.0.7",
+    "redux": "^4.0.0"
   }
 }

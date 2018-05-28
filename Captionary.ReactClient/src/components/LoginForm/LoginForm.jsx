@@ -1,10 +1,19 @@
 import React from 'react';
 import { Button } from 'reactstrap';
+import { connect } from 'react-redux';
+
+import { LoginAction } from '../../actions/LoginAction';
 
 import Input from '../Input/Input';
 import './LoginForm.css';
 
-export default class LoginForm extends React.Component {
+const mapDispatchToProps = (dispatch) => {
+  return {
+    LoginAction: (playerName) => dispatch(LoginAction(playerName, 1337))
+  };
+};
+
+class LoginFormComponent extends React.Component {
   constructor(props) {
     super(props);
 
@@ -22,16 +31,16 @@ export default class LoginForm extends React.Component {
 
   onSubmit(e) {
     e.preventDefault();
-    this.props.onSubmit(this.state.playerName);
+    this.props.LoginAction(this.state.playerName);
   }
 
   render() {
     return (
       <div className="login-form">
-          <Input onChange={this.handleNameChange}
-                value={this.state.playerName}
-                placeholder="What is your name?" />
-                
+        <Input onChange={this.handleNameChange}
+          value={this.state.playerName}
+          placeholder="What is your name?" />
+
         <Button color='success' block onClick={this.onSubmit}>
           Play
         </Button>
@@ -39,3 +48,6 @@ export default class LoginForm extends React.Component {
     )
   }
 };
+
+const LoginForm = connect(null, mapDispatchToProps)(LoginFormComponent);
+export default LoginForm;

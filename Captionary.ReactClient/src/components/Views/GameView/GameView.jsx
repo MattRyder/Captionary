@@ -1,28 +1,19 @@
 import React from 'react';
+import { connect } from 'react-redux';
 
 import ImageContainer from "../../Game/ImageContainer/ImageContainer";
 import CaptionInputForm from "../../Game/CaptionInputForm/CaptionInputForm";
 import CaptionCardList from "../../Game/CaptionCardList/CaptionCardList";
 import ChatContainer from "../../Game/ChatContainer/ChatContainer";
 
-import './GameView.css'
+import './GameView.css';
 
-const SERVER_ACTION_PLAYER_CONNECTED = "PlayerConnected";
-const SERVER_ACTION_PLAYER_DISCONNECTED = "PlayerDisconnected";
+const mapStateToProps = (state) => {
+    return { sessionInfo: state.game.sessionInfo };
+};
 
-export default class GameView extends React.Component {
-    constructor(props) {
-        super(props);
-    }
-
+class GameViewComponent extends React.Component {
     componentWillMount() {
-        this.props.hubConnection.on(SERVER_ACTION_PLAYER_CONNECTED, (playerName) => {
-            console.log("Player connected to Game: " +playerName);
-        });
-
-        this.props.hubConnection.on(SERVER_ACTION_PLAYER_DISCONNECTED, (playerName) => {
-            console.log("Player disconnected from Game: " +playerName);
-        });
     }
 
     render() {
@@ -34,9 +25,12 @@ export default class GameView extends React.Component {
                     <CaptionInputForm />
                 </div>
                 <div className="game-chat">
-                    <ChatContainer hubConnection={this.props.hubConnection} name={"Matt"} />
+                    <ChatContainer name={this.props.sessionInfo.playerName} />
                 </div>
             </div>
         );
     }
-}
+};
+
+const GameView = connect(mapStateToProps)(GameViewComponent);
+export default GameView;
