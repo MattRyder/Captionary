@@ -44,12 +44,11 @@ namespace Captionary.WebAPI.Hubs
 
             var player = new Player()
             {
+                ID = Context.ConnectionId,
                 Name = playerName
             };
 
             await _playerRepo.SaveAsync(player);
-
-            // Player player = await FindOrCreatePlayerAsync(Context.ConnectionId, playerName);
 
             Room room;
             if (String.IsNullOrEmpty(roomId))
@@ -69,7 +68,7 @@ namespace Captionary.WebAPI.Hubs
             // await _cache.SetStringAsync(Context.ConnectionId, playerName);
 
             await Clients.Caller.SendAsync("JoinGame", room.ID);
-            await Clients.Others.SendAsync("PlayerConnected", playerName);
+            await Clients.Others.SendAsync("PlayerConnected", player.Name);
         }
 
         public async Task JoinRoomAsync()
@@ -84,18 +83,18 @@ namespace Captionary.WebAPI.Hubs
 
         public async Task SendMessage(JObject message)
         {
-            // var playerName = await _cache.GetStringAsync(Context.ConnectionId);
-            // if (String.IsNullOrEmpty(playerName))
+            var player = await _playerRepo.FindAsync(Context.ConnectionId);
+            if (player == null)
             {
                 return;
             }
 
-            // Console.WriteLine(playerName + "(" + Context.ConnectionId + ") says: " + message["message"]);
+            Console.WriteLine(player.Name + "(" + player.ID + ") says: " + message["message"]);
 
             message["senderId"] = 0;
             await Clients.Caller.SendAsync("ReceiveMessage", message);
 
-            message["senderId"] = Context.ConnectionId;
+            message["senderId"] = player.ID;
             await Clients.Others.SendAsync("ReceiveMessage", message);
         }
     }
