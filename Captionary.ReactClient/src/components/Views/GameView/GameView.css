@@ -14,7 +14,11 @@
 }
 
 .game-chat {
-  /* width: 33%; */
+  width: 25vw;
+}
+
+.game > .caption-input {
+  max-height: 50vh;
 }
 
 .game > .caption-card-list {
@@ -23,4 +27,5 @@
 
 .game > .image-container {
   flex: 1;
+  height: 50vh;
 }

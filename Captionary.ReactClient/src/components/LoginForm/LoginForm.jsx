@@ -9,7 +9,7 @@ import './LoginForm.css';
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    LoginAction: (playerName) => dispatch(LoginAction(playerName, 1337))
+    LoginAction: (playerName) => dispatch(LoginAction(playerName, null))
   };
 };
 

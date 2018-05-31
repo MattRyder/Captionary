@@ -4,6 +4,12 @@ import Input from '../../Input/Input';
 
 import './CaptionInputForm.css';
 
+const mapDispatchToProps = (dispatch) => {
+    return {
+        
+    }
+}
+
 /**
  * A component that records/resets the caption
  */

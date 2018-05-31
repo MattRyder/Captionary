@@ -13,9 +13,6 @@ const mapStateToProps = (state) => {
 };
 
 class GameViewComponent extends React.Component {
-    componentWillMount() {
-    }
-
     render() {
         return (
             <div className="game-container">
