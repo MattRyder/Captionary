@@ -35,7 +35,8 @@ namespace Captionary.WebAPI.Hubs
             {
                 _playerRepo.Delete(player);
             }
-            Console.WriteLine(player?.Name + "(" + Context.ConnectionId + ") disconnected from Captionary SignalR.");
+            Console.WriteLine(player?.Name + "(" + Context.ConnectionId +
+                ") disconnected from Captionary SignalR.");
         }
 
         public async Task PlayerLogin(string playerName, string roomId)
@@ -50,7 +51,7 @@ namespace Captionary.WebAPI.Hubs
 
             await _playerRepo.SaveAsync(player);
 
-            Room room;
+            Room room = null;
             if (String.IsNullOrEmpty(roomId))
             {
                 room = new Room();
@@ -62,12 +63,17 @@ namespace Captionary.WebAPI.Hubs
                 room = await _roomRepo.FindAsync(roomId);
             }
 
+            if (room == null)
+            {
+                return;
+            }
+
             Console.WriteLine(player.Name + " is requesting access to Room " + room.ID);
             await Groups.AddToGroupAsync(Context.ConnectionId, room.ID);
 
             // await _cache.SetStringAsync(Context.ConnectionId, playerName);
 
-            await Clients.Caller.SendAsync("JoinGame", room.ID);
+            await Clients.Caller.SendAsync("JoinGame", player.Name, room.ID);
             await Clients.Others.SendAsync("PlayerConnected", player.Name);
         }
 

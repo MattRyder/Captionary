@@ -18,7 +18,5 @@ const store = createStore(
 
 SignalrInit(store);
 
-store.subscribe(() => console.log("Captionary State Changed!"));
-
 export const gameStore = store;
 export const gameHistory = history; 

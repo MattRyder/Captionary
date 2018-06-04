@@ -5,16 +5,16 @@ const InitialState = {
     chatMessages: [],
     sessionInfo: {
         playerName: "",
-        roomId: 0
+        roomId: ""
     }
 };
 
 const GameReducer = (state = InitialState, action) => {
     switch (action.type) {
-        case ActionTypes.LOGIN_ACTION: {
+        case ActionTypes.GAME_ACCESS_RESPONSE_ACTION:
             state.sessionInfo = action.payload;
+            console.log(`Welcome to Room ${state.sessionInfo.roomId}, ${state.sessionInfo.playerName}`);
             break;
-        }
         case ActionTypes.SIGNALR_CONNECT_ACTION: {
             state.hubConnection = action.payload.hubConnection;
             state.hubConnection
@@ -24,7 +24,7 @@ const GameReducer = (state = InitialState, action) => {
         }
         case ActionTypes.RECEIVE_CHAT_MESSAGE_ACTION: {
             return {
-                ...state, chatMessages:[...state.chatMessages, action.payload.message]
+                ...state, chatMessages: [...state.chatMessages, action.payload.message]
             };
         }
         default:

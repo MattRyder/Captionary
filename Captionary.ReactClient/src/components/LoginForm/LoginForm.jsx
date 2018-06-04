@@ -2,15 +2,16 @@ import React from 'react';
 import { Button } from 'reactstrap';
 import { connect } from 'react-redux';
 
-import { LoginAction } from '../../actions/LoginAction';
+import { GameRequestAccessAction } from '../../actions/GameRequestAccessAction';
 
 import Input from '../Input/Input';
 import './LoginForm.css';
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    LoginAction: (playerName) => dispatch(LoginAction(playerName, null))
-  };
+    GameRequestAccessAction: (playerName, roomId) =>
+      dispatch(GameRequestAccessAction(playerName, roomId))
+  }
 };
 
 class LoginFormComponent extends React.Component {
@@ -31,7 +32,7 @@ class LoginFormComponent extends React.Component {
 
   onSubmit(e) {
     e.preventDefault();
-    this.props.LoginAction(this.state.playerName);
+    this.props.GameRequestAccessAction(this.state.playerName, this.props.roomId);
   }
 
   render() {

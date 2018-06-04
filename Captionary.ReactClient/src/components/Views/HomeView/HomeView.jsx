@@ -5,19 +5,10 @@ import LoginForm from '../../LoginForm/LoginForm';
 import "./HomeView.css";
 
 class HomeView extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            inputPlayerName: ""
-        };
-
-    }
-
     render() {
         return (
             <div className="home-view">
-                <LoginForm inputPlayerName={this.state.inputPlayerName} />
+                <LoginForm roomId={this.props.match.params.id} />
             </div>
         );
     }

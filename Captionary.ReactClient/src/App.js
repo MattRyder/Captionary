@@ -23,19 +23,10 @@ class App extends React.Component {
       <div className="captionary-app">
         <Navigation />
         <Switch>
-          <Route exact
-            path="/"
-            render={() => {
-              return (<HomeView />);
-            }} />
-          <Route
-            path="/game/:id"
-            render={() => {
-              return (<GameView />);
-            }} />
-          <Route
-            path="/error/:id"
-            component={ErrorView} />
+          <Route exact path="/" component={HomeView} />
+          <Route path="/join/:id" component={HomeView} />
+          <Route path="/play" component={GameView} />
+          <Route path="/error/:id" component={ErrorView} />
         </Switch>
       </div>
     );

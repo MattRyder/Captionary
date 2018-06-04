@@ -29,5 +29,5 @@ class GameViewComponent extends React.Component {
     }
 };
 
-const GameView = connect(mapStateToProps)(GameViewComponent);
+const GameView = connect(mapStateToProps, null)(GameViewComponent);
 export default GameView;
