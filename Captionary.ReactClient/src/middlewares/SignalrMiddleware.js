@@ -1,10 +1,11 @@
 import { push } from 'react-router-redux';
 import { HubConnectionBuilder, LogLevel } from '@aspnet/signalr';
 import { SignalrConnectAction } from '../actions/SignalrConnectAction';
-import { ReceiveChatMessageAction } from '../actions/ReceiveChatMessageAction';
 import * as ActionTypes from '../constants/ActionTypes';
 import * as SignalrActions from '../constants/SignalrActions';
 import { GameAccessResponseAction } from '../actions/GameAccessResponseAction';
+import { ReceiveChatMessageAction } from '../actions/ReceiveChatMessageAction';
+import { RoundStartedAction } from '../actions/RoundStartedAction';
 
 const SERVER_HOST = process.env.REACT_APP_SIGNALR_HOST;
 
@@ -55,6 +56,10 @@ export const SignalrInit = (store) => {
 
     hubConnection.on(SignalrActions.SERVER_ACTION_RECEIVE_MESSAGE, (messageData) => {
         store.dispatch(ReceiveChatMessageAction(messageData.senderId, messageData.senderName, messageData.message));
+    });
+
+    hubConnection.on(SignalrActions.SERVER_ACTION_ROUND_STARTED, (roundId, imageUrl) => {
+        store.dispatch(RoundStartedAction(roundId, 0xABBA, imageUrl));
     });
 
     const onError = () => { store.dispatch(push("/error/1000")) };

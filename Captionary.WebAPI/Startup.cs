@@ -70,6 +70,7 @@ namespace Captionary.WebAPI
 
             services.AddTransient<IRepo<Room>, RoomRepo>();
             services.AddTransient<IRepo<Player>, PlayerRepo>();
+            services.AddTransient<IRepo<Round>, RoundRepo>();
 
             services.AddDistributedRedisCache((options) =>
             {

@@ -12,15 +12,17 @@ const InitialState = {
 const GameReducer = (state = InitialState, action) => {
     switch (action.type) {
         case ActionTypes.GAME_ACCESS_RESPONSE_ACTION:
-            state.sessionInfo = action.payload;
-            console.log(`Welcome to Room ${state.sessionInfo.roomId}, ${state.sessionInfo.playerName}`);
-            break;
+            console.log(
+                `Welcome to Room ${action.payload.roomId}, ${action.payload.playerName}`);
+            return Object.assign({}, state, {
+                sessionInfo: action.payload
+            });
         case ActionTypes.SIGNALR_CONNECT_ACTION: {
             state.hubConnection = action.payload.hubConnection;
             state.hubConnection
                 .start()
                 .catch(err => action.payload.onErrorCallback());
-            break;
+            return state;
         }
         case ActionTypes.RECEIVE_CHAT_MESSAGE_ACTION: {
             return {
@@ -28,10 +30,8 @@ const GameReducer = (state = InitialState, action) => {
             };
         }
         default:
-            break;
+            return state;
     }
-
-    return state;
 };
 
 export default GameReducer;

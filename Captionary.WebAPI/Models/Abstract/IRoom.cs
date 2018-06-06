@@ -7,10 +7,16 @@ namespace Captionary.Models.Abstract
     {
         string ID { get; set; }
 
-        IEnumerable<IPlayer> GetPlayers();
+        HashSet<IPlayer> Players { get; set; }
+
+        LinkedList<IRound> Rounds { get; set; }
 
         bool AddPlayer(IPlayer player);
 
         bool RemovePlayer(IPlayer player);
+
+        bool AddRound(IRound round);
+
+
     }
 }

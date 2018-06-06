@@ -15,11 +15,13 @@ namespace Captionary.WebAPI.Hubs
     {
         private readonly IRepo<Room> _roomRepo;
         private readonly IRepo<Player> _playerRepo;
+        private readonly IRepo<Round> _roundRepo;
 
-        public GameHub(IRepo<Room> roomRepo, IRepo<Player> playerRepo)
+        public GameHub(IRepo<Room> roomRepo, IRepo<Player> playerRepo, IRepo<Round> roundRepo)
         {
             this._roomRepo = roomRepo;
             this._playerRepo = playerRepo;
+            this._roundRepo = roundRepo;
         }
 
         public override async Task OnConnectedAsync()
@@ -75,16 +77,8 @@ namespace Captionary.WebAPI.Hubs
 
             await Clients.Caller.SendAsync("JoinGame", player.Name, room.ID);
             await Clients.Others.SendAsync("PlayerConnected", player.Name);
-        }
 
-        public async Task JoinRoomAsync()
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, "Room1");
-        }
-
-        public async Task LeaveRoomAsync()
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Room1");
+            await StartRound(room.ID);
         }
 
         public async Task SendMessage(JObject message)
@@ -102,6 +96,30 @@ namespace Captionary.WebAPI.Hubs
 
             message["senderId"] = player.ID;
             await Clients.Others.SendAsync("ReceiveMessage", message);
+        }
+
+        public async Task StartRound(string roomId)
+        {
+            var room = await _roomRepo.FindAsync(roomId);
+
+            if(room == null)
+            {
+                return;
+            }
+
+            var round = new Round()
+            {
+                ImageUrl = "https://lorempixel.com/400/400/"
+            };
+
+            var roundPersisted = await _roundRepo.SaveAsync(round);
+
+            if (roundPersisted)
+            {
+                room.AddRound(round);
+
+                await Clients.Group(room.ID).SendAsync("RoundStarted", round.ID, round.ImageUrl);
+            }
         }
     }
 }
