@@ -36,11 +36,15 @@ export const SignalrMiddleware = (store) => {
             }
             case ActionTypes.SEND_CHAT_MESSAGE_ACTION: {
                 let hubConnection = store.getState().game.hubConnection;
+                const roomId = action.payload.roomId;
                 const msg = action.payload.message;
+
+                debugger;
+                
                 console.log(msg.senderName + " sent message: " + msg.message);
 
                 hubConnection
-                    .invoke(SignalrActions.SERVER_ACTION_SEND_MESSAGE, msg)
+                    .invoke(SignalrActions.SERVER_ACTION_SEND_MESSAGE, roomId, msg)
                     .catch(err => { console.error("Failed to send message: " + err) });
                 break;
             }

@@ -22,7 +22,7 @@ class GameViewComponent extends React.Component {
                     <CaptionInputForm />
                 </div>
                 <div className="game-chat">
-                    <ChatContainer name={this.props.sessionInfo.playerName} />
+                    <ChatContainer />
                 </div>
             </div>
         );
