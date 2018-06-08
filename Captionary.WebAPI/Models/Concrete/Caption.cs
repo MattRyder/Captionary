@@ -5,6 +5,7 @@ namespace Captionary.Models.Concrete
     public class Caption : ICaption
     {
         string id;
+        string playerId;
         string text;
         int points;
 
@@ -24,6 +25,12 @@ namespace Captionary.Models.Concrete
         {
             get { return points; }
             set { points = value; }
+        }
+
+        public string PlayerID
+        {
+            get { return playerId; }
+            set { this.playerId = value; }
         }
 
         public void AddPoints(int points)

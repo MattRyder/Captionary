@@ -4,6 +4,8 @@ namespace Captionary.Models.Abstract
     {
         string ID { get; set; }
 
+        string PlayerID { get; set; }
+
         string Text { get; set; } 
 
         int Points { get; set; }

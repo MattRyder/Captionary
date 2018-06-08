@@ -2,61 +2,58 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Captionary.Models.Abstract;
-using ProtoBuf;
 
 namespace Captionary.Models.Concrete
 {
-    [ProtoContract]
     public class Round : IRound
     {
         string id;
         string imageUrl;
-        Dictionary<IPlayer, ICaption> playerCaptions;
+        List<Caption> playerCaptions;
 
         public Round()
         {
             this.id = Guid.NewGuid().ToString();
-            playerCaptions = new Dictionary<IPlayer, ICaption>();
+            playerCaptions = new List<Caption>();
         }
 
-        [ProtoMember(1)]
         public string ID
         {
             get { return id; }
             set { this.id = value; }
         }
 
-        [ProtoMember(2)]
         public string ImageUrl
         {
             get { return imageUrl; }
             set { imageUrl = value; }
         }
 
-        public Dictionary<IPlayer, ICaption> PlayerCaptions
+        public List<Caption> PlayerCaptions
         {
             get { return playerCaptions; }
             set { playerCaptions = value; }
         }
 
-        public IPlayer WinningPlayer
+        public ICaption WinningCaption
         {
             get
             {
                 return playerCaptions
-                    .OrderByDescending(pcSet => pcSet.Value.Points)
-                    .First().Key;
+                    .OrderByDescending(caps => caps.Points)
+                    .FirstOrDefault();
             }
         }
 
-        public bool SubmitCaption(IPlayer player, ICaption caption)
+        public bool SubmitCaption(Caption caption)
         {
-            if (playerCaptions.ContainsKey(player))
+            var playerHasSubmitted = playerCaptions.Any(caps => caps.PlayerID == caption.PlayerID);
+            if (playerHasSubmitted || string.IsNullOrEmpty(caption.PlayerID))
             {
                 return false;
             }
 
-            playerCaptions.Add(player, caption);
+            playerCaptions.Add(caption);
             return true;
         }
     }

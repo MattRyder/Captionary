@@ -1,20 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Captionary.Models.Concrete;
+﻿using Captionary.Models.Concrete;
 using Captionary.WebAPI.Hubs;
 using Captionary.WebAPI.Repos;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core;
 using StackExchange.Redis.Extensions.Core.Configuration;
-using StackExchange.Redis.Extensions.Protobuf;
+using StackExchange.Redis.Extensions.Newtonsoft;
 
 namespace Captionary.WebAPI
 {
@@ -62,15 +56,13 @@ namespace Captionary.WebAPI
 
             services.AddSingleton(redisConfiguration);
 
-            var serializer = new ProtobufSerializer();
+            var serializer = new NewtonsoftSerializer();
             var redisClient = new StackExchangeRedisCacheClient(serializer, redisConfiguration);
 
-            services.AddSingleton<ISerializer, ProtobufSerializer>(p => serializer);
+            services.AddSingleton<ISerializer, NewtonsoftSerializer>(p => serializer);
             services.AddSingleton<ICacheClient, StackExchangeRedisCacheClient>(p => redisClient);
 
             services.AddTransient<IRepo<Room>, RoomRepo>();
-            services.AddTransient<IRepo<Player>, PlayerRepo>();
-            services.AddTransient<IRepo<Round>, RoundRepo>();
 
             services.AddDistributedRedisCache((options) =>
             {

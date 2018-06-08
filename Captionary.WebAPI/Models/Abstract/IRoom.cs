@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Captionary.Models.Concrete;
 
 namespace Captionary.Models.Abstract
 {
@@ -7,15 +8,15 @@ namespace Captionary.Models.Abstract
     {
         string ID { get; set; }
 
-        HashSet<IPlayer> Players { get; set; }
+        HashSet<Player> Players { get; set; }
 
-        LinkedList<IRound> Rounds { get; set; }
+        LinkedList<Round> Rounds { get; set; }
 
-        bool AddPlayer(IPlayer player);
+        bool AddPlayer(Player player);
 
-        bool RemovePlayer(IPlayer player);
+        bool RemovePlayer(Player player);
 
-        bool AddRound(IRound round);
+        bool AddRound(Round round);
 
 
     }

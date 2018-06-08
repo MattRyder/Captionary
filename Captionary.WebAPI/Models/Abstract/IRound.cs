@@ -1,18 +1,19 @@
 using System.Collections.Generic;
+using Captionary.Models.Concrete;
 
 namespace Captionary.Models.Abstract
 {
     public interface IRound
     {
-        Dictionary<IPlayer, ICaption> PlayerCaptions { get; set; }
+        List<Caption> PlayerCaptions { get; set; }
 
         string ID { get; }
 
         string ImageUrl { get; set; }
 
-        IPlayer WinningPlayer { get; }
+        ICaption WinningCaption { get; }
         
-        bool SubmitCaption(IPlayer player, ICaption caption);
+        bool SubmitCaption(Caption caption);
 
     };
 }

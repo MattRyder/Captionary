@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Captionary.Models.Abstract;
 using Captionary.Models.Concrete;
@@ -14,14 +15,10 @@ namespace Captionary.WebAPI.Hubs
     public class GameHub : Hub
     {
         private readonly IRepo<Room> _roomRepo;
-        private readonly IRepo<Player> _playerRepo;
-        private readonly IRepo<Round> _roundRepo;
 
-        public GameHub(IRepo<Room> roomRepo, IRepo<Player> playerRepo, IRepo<Round> roundRepo)
+        public GameHub(IRepo<Room> roomRepo)
         {
             this._roomRepo = roomRepo;
-            this._playerRepo = playerRepo;
-            this._roundRepo = roundRepo;
         }
 
         public override async Task OnConnectedAsync()
@@ -32,10 +29,10 @@ namespace Captionary.WebAPI.Hubs
 
         public override async Task OnDisconnectedAsync(Exception exception)
         {
-            var player = await _playerRepo.FindAsync(Context.ConnectionId);
+            Player player = null; //await _playerRepo.FindAsync(Context.ConnectionId);
             if (player != null)
             {
-                _playerRepo.Delete(player);
+                // _playerRepo.Delete(player);
             }
             Console.WriteLine(player?.Name + "(" + Context.ConnectionId +
                 ") disconnected from Captionary SignalR.");
@@ -51,14 +48,10 @@ namespace Captionary.WebAPI.Hubs
                 Name = playerName
             };
 
-            await _playerRepo.SaveAsync(player);
-
             Room room = null;
             if (String.IsNullOrEmpty(roomId))
             {
                 room = new Room();
-
-                await _roomRepo.SaveAsync(room);
             }
             else
             {
@@ -71,23 +64,34 @@ namespace Captionary.WebAPI.Hubs
             }
 
             Console.WriteLine(player.Name + " is requesting access to Room " + room.ID);
-            await Groups.AddToGroupAsync(Context.ConnectionId, room.ID);
 
-            // await _cache.SetStringAsync(Context.ConnectionId, playerName);
+            if (room.AddPlayer(player))
+            {
+                await _roomRepo.SaveAsync(room);
 
-            await Clients.Caller.SendAsync("JoinGame", player.Name, room.ID);
-            await Clients.Others.SendAsync("PlayerConnected", player.Name);
+                await Groups.AddToGroupAsync(Context.ConnectionId, room.ID);
 
-            await StartRound(room.ID);
+                await Clients.Caller.SendAsync("JoinGame", player.Name, room.ID);
+                await Clients.Others.SendAsync("PlayerConnected", player.Name);
+            }
+
+            await _roomRepo.SaveAsync(room);
+
+            if (room.Players.Count == 1)
+            {
+                await StartRound(room.ID);
+            }
         }
 
-        public async Task SendMessage(JObject message)
+        public async Task SendMessage(string roomId, JObject message)
         {
-            var player = await _playerRepo.FindAsync(Context.ConnectionId);
-            if (player == null)
-            {
+            var room = await _roomRepo.FindAsync(roomId);
+            if (room == null)
                 return;
-            }
+
+            var player = room.Players.First(plyr => plyr.ID == Context.ConnectionId);
+            if (player == null)
+                return;
 
             Console.WriteLine(player.Name + "(" + player.ID + ") says: " + message["message"]);
 
@@ -102,24 +106,44 @@ namespace Captionary.WebAPI.Hubs
         {
             var room = await _roomRepo.FindAsync(roomId);
 
-            if(room == null)
+            if (room == null)
             {
                 return;
             }
 
             var round = new Round()
             {
-                ImageUrl = "https://lorempixel.com/400/400/"
+                ImageUrl = "https://lorempixel.com/400/400/?_=" + Guid.NewGuid().ToString()
             };
 
-            var roundPersisted = await _roundRepo.SaveAsync(round);
+            room.AddRound(round);
+            await _roomRepo.SaveAsync(room);
 
-            if (roundPersisted)
+            await Clients.Group(room.ID).SendAsync("RoundStarted", round.ID, round.ImageUrl);
+
+        }
+
+        public async Task SubmitCaption(string roomId, string roundId, string captionText)
+        {
+            var room = await _roomRepo.FindAsync(roomId);
+            if (room == null)
+                return;
+
+            var player = room.Players.First(p => p.ID == Context.ConnectionId);
+            if (player == null)
+                return;
+
+            var caption = new Caption()
             {
-                room.AddRound(round);
+                PlayerID = player.ID,
+                Text = captionText
+            };
 
-                await Clients.Group(room.ID).SendAsync("RoundStarted", round.ID, round.ImageUrl);
-            }
+            var round = room.Rounds.Last.Value;
+            round.SubmitCaption(caption);
+
+            await _roomRepo.SaveAsync(room);
+
         }
     }
 }

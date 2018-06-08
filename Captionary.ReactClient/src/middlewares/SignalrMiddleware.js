@@ -13,21 +13,29 @@ export const SignalrMiddleware = (store) => {
     return (next) => (action) => {
         switch (action.type) {
             case ActionTypes.GAME_REQUEST_ACCESS_ACTION:
-                const hubConnection = store.getState().game.hubConnection;
+                let hubConnection = store.getState().game.hubConnection;
 
                 hubConnection
                     .invoke(SignalrActions.SERVER_ACTION_LOGIN, action.payload.playerName, action.payload.roomId)
-                    .catch(err => { console.error("Failed to login: " + err) });
+                    .catch(err => { console.error(`Failed to login: ${err}`) });
                 break;
             case ActionTypes.GAME_ACCESS_RESPONSE_ACTION:
                 store.dispatch(push("/play"));
+                break;
+            case ActionTypes.SUBMIT_CAPTION_ACTION:
+                let hubCon = store.getState().game.hubConnection;
+
+                hubCon
+                    .invoke(SignalrActions.SERVER_ACTION_SUBMIT_CAPTION,
+                        action.payload.roomId, action.payload.roundId, action.payload.captionText)
+                    .catch(err => { console.error(`Failed to submit caption ${err}`) });
                 break;
             case ActionTypes.SIGNALR_CONNECT_ACTION: {
                 console.log("SignalR Middleware: Connecting to Game Hub...");
                 break;
             }
             case ActionTypes.SEND_CHAT_MESSAGE_ACTION: {
-                const hubConnection = store.getState().game.hubConnection;
+                let hubConnection = store.getState().game.hubConnection;
                 const msg = action.payload.message;
                 console.log(msg.senderName + " sent message: " + msg.message);
 
