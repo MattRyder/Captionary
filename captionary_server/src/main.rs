@@ -1,4 +1,4 @@
-#![feature(plugin)]
+#![feature(plugin, custom_derive)]
 #![plugin(rocket_codegen)]
 
 #[macro_use]
@@ -14,6 +14,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate r2d2;
 extern crate r2d2_diesel;
+extern crate frank_jwt;
 
 pub mod controllers;
 pub mod database;
@@ -35,6 +36,9 @@ fn main() {
             controllers::captions::index,
             controllers::captions::show
             ])
+        .mount("/api/v1/sessions", routes![
+            controllers::sessions::create
+        ])
         .catch(catchers![not_found])
         .launch();
 }
