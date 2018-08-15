@@ -4,6 +4,7 @@ table! {
         text -> Text,
         points -> Int4,
         published_at -> Timestamptz,
+        user_id -> Int4,
     }
 }
 
@@ -16,16 +17,21 @@ table! {
 }
 
 table! {
-    sessions (id) {
+    users (id) {
         id -> Int4,
-        token -> Varchar,
+        room_id -> Nullable<Int4>,
+        username -> Varchar,
+        token -> Text,
         ip_address -> Varchar,
         created_at -> Timestamptz,
     }
 }
 
+joinable!(captions -> users (user_id));
+joinable!(users -> rooms (room_id));
+
 allow_tables_to_appear_in_same_query!(
     captions,
     rooms,
-    sessions,
+    users,
 );

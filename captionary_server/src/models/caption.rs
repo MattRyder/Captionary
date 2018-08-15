@@ -14,6 +14,7 @@ pub struct Caption {
     pub text: String,
     pub points: i32,
     pub published_at: NaiveDateTime,
+    pub user_id: i32,
 }
 
 #[derive(Insertable, Debug)]

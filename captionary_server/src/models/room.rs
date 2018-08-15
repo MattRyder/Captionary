@@ -1,8 +1,8 @@
 use chrono::NaiveDateTime;
 use diesel;
-use diesel::sql_query;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::sql_query;
 use diesel::result::Error;
 use names::{Generator, Name};
 
@@ -23,6 +23,14 @@ pub struct NewRoom<'a> {
     pub name: &'a String,
 }
 
+#[derive(QueryableByName, Debug)]
+#[table_name = "rooms"]
+struct AvailableRoom {
+    id: i32,
+    name: String,
+    created_at: NaiveDateTime,
+}
+
 impl Room {
     pub fn list_all(conn: &PgConnection) -> Vec<Room> {
         rooms_repo
@@ -32,19 +40,19 @@ impl Room {
 
     pub fn find_available_room(conn: &PgConnection) {
         
-        // let find_room_sql = "
-        //     SELECT * 
-        //     FROM rooms
-        //     WHERE id IN (
-        //         SELECT room_id
-        //         FROM users
-        //         GROUP BY room_id
-        //         HAVING COUNT(room_id) < 5
-        //     );";
+        let find_room_sql = "
+            SELECT *
+            FROM rooms
+            WHERE id IN (
+                SELECT room_id
+                FROM users
+                GROUP BY room_id
+                HAVING COUNT(room_id) < 
+            );";
 
-        
+        let res : Vec<AvailableRoom> = sql_query(find_room_sql).load(conn).unwrap();
 
-        // let res = sql_query(find_room_sql).load::<Room>(conn);
+        println!("OK: {:?}", res);
     }
 
     pub fn find(conn: &PgConnection, room_id: i32) -> Result<Room, Error> {
@@ -53,8 +61,8 @@ impl Room {
 
     pub fn create<'a>(conn: &PgConnection) -> Room {
         let mut generator = Generator::with_naming(Name::Numbered);
-        
-        let mut room_name : String;
+
+        let mut room_name: String;
         while {
             room_name = generator.next().unwrap();
             let present = Self::is_name_available(conn, &room_name);
@@ -72,7 +80,7 @@ impl Room {
     }
 
     fn is_name_available(conn: &PgConnection, room_name: &String) -> bool {
-        let count : i64 = rooms::table
+        let count: i64 = rooms::table
             .filter(name.eq(room_name))
             .count()
             .get_result(conn)

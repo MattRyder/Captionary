@@ -1,27 +1,56 @@
-use chrono::Utc;
-use frank_jwt::{decode, encode, Algorithm};
+use chrono::{NaiveDateTime, Utc};
+use diesel;
+use diesel::pg::PgConnection;
 use rocket::request::FromForm;
+use diesel::prelude::*;
+use frank_jwt::{encode, Algorithm};
 use std::env;
+
+use schema::users;
 
 const ENV_JWT_ISSUER: &'static str = "JWT_ISSUER";
 const ENV_JWT_SECRET: &'static str = "JWT_SECRET";
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Queryable, Debug)]
 pub struct User {
+    pub id: i32,
+    pub room_id: Option<i32>,
+    pub username: String,
     pub token: String,
+    pub ip_address: String,
+    pub created_at: NaiveDateTime,
 }
 
-#[derive(Deserialize, Debug, FromForm)]
+#[derive(Serialize, Deserialize, FromForm)]
 pub struct UserParams {
-    pub username: String,
+    pub username: String
+}
+
+#[derive(Insertable, Debug)]
+#[table_name = "users"]
+pub struct NewUser<'a> {
+    pub username: &'a String,
+    pub ip_address: &'a String,
+    pub token: &'a String,
 }
 
 impl User {
-    pub fn new(username: &String) -> Option<User> {
-        if username.is_empty() {
-            return None;
-        }
+    pub fn create<'a>(conn: &PgConnection, user_params: &UserParams) -> User {
+        let token = Self::generate_token(&user_params.username).unwrap();
 
+        let new_user = NewUser {
+            token: &token,
+            username: &user_params.username,
+            ip_address: &("127.0.0.1".into()),
+        };
+
+        diesel::insert_into(users::table)
+            .values(&new_user)
+            .get_result(conn)
+            .expect("Failed to create User.")
+    }
+
+    fn generate_token(username: &String) -> Option<String> {
         let jwt_secret =
             env::var(ENV_JWT_SECRET).expect(&format!("Please set env {}", ENV_JWT_SECRET));
 
@@ -39,11 +68,6 @@ impl User {
             "username" : username
         });
 
-        let token = encode(header, &jwt_secret.to_string(), &payload, Algorithm::HS256);
-
-        match token {
-            Ok(token) => Some(User { token: token }),
-            Err(token_error) => None,
-        }
+        encode(header, &jwt_secret.to_string(), &payload, Algorithm::HS256).ok()
     }
 }
