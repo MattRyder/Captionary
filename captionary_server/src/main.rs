@@ -15,6 +15,7 @@ extern crate serde_json;
 extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate frank_jwt;
+extern crate names;
 
 pub mod controllers;
 pub mod database;
@@ -36,8 +37,8 @@ fn main() {
             controllers::captions::index,
             controllers::captions::show
             ])
-        .mount("/api/v1/sessions", routes![
-            controllers::sessions::create
+        .mount("/api/v1/users", routes![
+            controllers::users::create
         ])
         .catch(catchers![not_found])
         .launch();

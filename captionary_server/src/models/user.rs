@@ -6,17 +6,18 @@ use std::env;
 const ENV_JWT_ISSUER: &'static str = "JWT_ISSUER";
 const ENV_JWT_SECRET: &'static str = "JWT_SECRET";
 
-pub struct Session {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct User {
     pub token: String,
 }
 
 #[derive(Deserialize, Debug, FromForm)]
-pub struct SessionParams {
+pub struct UserParams {
     pub username: String,
 }
 
-impl Session {
-    pub fn new(username: &String) -> Option<Session> {
+impl User {
+    pub fn new(username: &String) -> Option<User> {
         if username.is_empty() {
             return None;
         }
@@ -41,7 +42,7 @@ impl Session {
         let token = encode(header, &jwt_secret.to_string(), &payload, Algorithm::HS256);
 
         match token {
-            Ok(token) => Some(Session { token: token }),
+            Ok(token) => Some(User { token: token }),
             Err(token_error) => None,
         }
     }
