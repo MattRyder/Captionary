@@ -38,36 +38,47 @@ impl Room {
             .expect("Failed to load Room list_all")
     }
 
-    pub fn find_available_room(conn: &PgConnection) {
-        
+    pub fn find_available_room_id(conn: &PgConnection) -> i32 {
         let find_room_sql = "
             SELECT *
             FROM rooms
-            WHERE id IN (
+            WHERE id = (
                 SELECT room_id
                 FROM users
                 GROUP BY room_id
-                HAVING COUNT(room_id) < 
+                HAVING COUNT(room_id) < 5
+                ORDER BY count(room_id) DESC
+                LIMIT 1
             );";
 
         let res : Vec<AvailableRoom> = sql_query(find_room_sql).load(conn).unwrap();
+        let first_room = res.first();
 
-        println!("OK: {:?}", res);
+        match first_room {
+            Some(room) => room.id,
+            None => {
+                match Self::create(conn) {
+                    Ok(room) => room.id,
+                    Err(_) => 0
+                }
+            }
+        }
     }
 
     pub fn find(conn: &PgConnection, room_id: i32) -> Result<Room, Error> {
         rooms::table.find(room_id).first::<Room>(conn)
     }
 
-    pub fn create<'a>(conn: &PgConnection) -> Room {
+    pub fn create<'a>(conn: &PgConnection) -> Result<Room, Error> {
         let mut generator = Generator::with_naming(Name::Numbered);
 
-        let mut room_name: String;
-        while {
-            room_name = generator.next().unwrap();
-            let present = Self::is_name_available(conn, &room_name);
-            present == false
-        } {}
+        let room_name = generator.next().unwrap();
+        // let mut room_name: String;
+        // while {
+            // room_name = generator.next().unwrap();
+            // let present = Self::is_name_available(conn, &room_name);
+        //     present == false
+        // } {}
 
         let new_room = NewRoom {
             name: &room_name.to_string(),
@@ -76,7 +87,6 @@ impl Room {
         diesel::insert_into(rooms::table)
             .values(&new_room)
             .get_result(conn)
-            .expect("Failed to create Room.")
     }
 
     fn is_name_available(conn: &PgConnection, room_name: &String) -> bool {
@@ -87,13 +97,5 @@ impl Room {
             .expect("Failed to find Room name availability.");
 
         return count > 0;
-    }
-}
-
-#[cfg(test)]
-mod test {
-    #[test]
-    fn list_all() {
-        unimplemented!();
     }
 }

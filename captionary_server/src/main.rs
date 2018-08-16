@@ -17,6 +17,9 @@ extern crate r2d2_diesel;
 extern crate frank_jwt;
 extern crate names;
 
+#[macro_use]
+extern crate fake;
+
 pub mod controllers;
 pub mod database;
 pub mod models;
