@@ -2,7 +2,7 @@ use chrono::{NaiveDateTime, Utc};
 use diesel;
 use diesel::pg::PgConnection;
 use rocket::request::FromForm;
-use diesel::prelude::*;
+use diesel::prelude::{Identifiable, Insertable, RunQueryDsl};
 use frank_jwt::{encode, Algorithm};
 use std::env;
 
@@ -12,7 +12,9 @@ use models::room::Room;
 const ENV_JWT_ISSUER: &'static str = "JWT_ISSUER";
 const ENV_JWT_SECRET: &'static str = "JWT_SECRET";
 
-#[derive(Serialize, Deserialize, Queryable, Debug)]
+#[derive(Associations, Identifiable, Serialize, Deserialize, Queryable, Debug)]
+#[table_name = "users"]
+#[belongs_to(Room)]
 pub struct User {
     pub id: i32,
     pub room_id: Option<i32>,
@@ -27,10 +29,16 @@ pub struct UserParams {
     pub username: String
 }
 
+#[derive(AsChangeset, Identifiable)]
+#[table_name="users"]
+pub struct AddToRoomParams {
+    pub id: i32,
+    pub room_id: Option<i32>
+}
+
 #[derive(Insertable, Debug)]
 #[table_name = "users"]
 pub struct NewUser<'a> {
-    pub room_id: i32,
     pub username: &'a String,
     pub ip_address: &'a String,
     pub token: &'a String,
@@ -39,11 +47,9 @@ pub struct NewUser<'a> {
 impl User {
     pub fn create<'a>(conn: &PgConnection, user_params: &UserParams) -> Option<User> {
         let token = Self::generate_token(&user_params.username).unwrap();
-        let available_room_id = Room::find_available_room_id(conn);
 
         let new_user = NewUser {
             token: &token,
-            room_id: available_room_id,
             username: &user_params.username,
             ip_address: &("127.0.0.1".into()),
         };

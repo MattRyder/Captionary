@@ -7,10 +7,13 @@ use diesel::result::Error;
 use names::{Generator, Name};
 
 use schema::rooms;
+use models::user::User;
 use schema::rooms::dsl::rooms as rooms_repo;
 use schema::rooms::dsl::*;
 
-#[derive(Serialize, Deserialize, Queryable, Debug)]
+const ROOM_MAX_CAPACITY : i64 = 8;
+
+#[derive(Serialize, Deserialize, Identifiable, Queryable, Debug)]
 pub struct Room {
     pub id: i32,
     pub name: String,
@@ -38,6 +41,43 @@ impl Room {
             .expect("Failed to load Room list_all")
     }
 
+    pub fn find(conn: &PgConnection, room_id: i32) -> Result<Room, Error> {
+        rooms::table.find(room_id).first::<Room>(conn)
+    }
+
+    pub fn create<'a>(conn: &PgConnection) -> Result<Room, Error> {
+        let mut generator = Generator::with_naming(Name::Numbered);
+
+        let room_name = generator.next().unwrap();
+        // let mut room_name: String;
+        // while {
+            // room_name = generator.next().unwrap();
+            // let present = Self::is_name_available(conn, &room_name);
+        //     present == false
+        // } {}
+
+        let new_room = NewRoom {
+            name: &room_name.to_string(),
+        };
+
+        diesel::insert_into(rooms::table)
+            .values(&new_room)
+            .get_result(conn)
+    }
+
+    pub fn can_be_joined(&self, conn: &PgConnection) -> bool {
+        let user_count = self.get_user_count(conn);
+
+        user_count >= 0 && user_count < ROOM_MAX_CAPACITY
+    }
+
+    pub fn get_user_count(&self, conn: &PgConnection) -> i64 {
+        User::belonging_to(self)
+                .count()
+                .get_result(conn)
+                .ok().unwrap()
+    }
+
     pub fn find_available_room_id(conn: &PgConnection) -> i32 {
         let find_room_sql = "
             SELECT *
@@ -63,30 +103,6 @@ impl Room {
                 }
             }
         }
-    }
-
-    pub fn find(conn: &PgConnection, room_id: i32) -> Result<Room, Error> {
-        rooms::table.find(room_id).first::<Room>(conn)
-    }
-
-    pub fn create<'a>(conn: &PgConnection) -> Result<Room, Error> {
-        let mut generator = Generator::with_naming(Name::Numbered);
-
-        let room_name = generator.next().unwrap();
-        // let mut room_name: String;
-        // while {
-            // room_name = generator.next().unwrap();
-            // let present = Self::is_name_available(conn, &room_name);
-        //     present == false
-        // } {}
-
-        let new_room = NewRoom {
-            name: &room_name.to_string(),
-        };
-
-        diesel::insert_into(rooms::table)
-            .values(&new_room)
-            .get_result(conn)
     }
 
     fn is_name_available(conn: &PgConnection, room_name: &String) -> bool {

@@ -31,7 +31,8 @@ impl Caption {
     }
 
     pub fn find(connection: &PgConnection, caption_id: i32) -> Result<Caption, Error> {
-        captions::table.find(caption_id)
+        captions::table
+            .find(caption_id)
             .first::<Caption>(connection)
     }
 
@@ -44,8 +45,8 @@ impl Caption {
             .expect("Failed to create Caption.")
     }
 
-    pub fn destroy(conn: &PgConnection, caption_id: i32) -> bool {
-        diesel::delete(captions::table.filter(id.eq(caption_id)))
+    pub fn destroy(&self, conn: &PgConnection) -> bool {
+        diesel::delete(captions::table.filter(id.eq(self.id)))
             .execute(conn)
             .is_ok()
     }

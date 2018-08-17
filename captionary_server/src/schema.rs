@@ -9,9 +9,27 @@ table! {
 }
 
 table! {
+    games (id) {
+        id -> Int4,
+        room_id -> Int4,
+        created_at -> Timestamptz,
+        finished_at -> Nullable<Timestamptz>,
+    }
+}
+
+table! {
     rooms (id) {
         id -> Int4,
         name -> Varchar,
+        created_at -> Timestamptz,
+    }
+}
+
+table! {
+    rounds (id) {
+        id -> Int4,
+        game_id -> Int4,
+        image_url -> Text,
         created_at -> Timestamptz,
     }
 }
@@ -28,10 +46,14 @@ table! {
 }
 
 joinable!(captions -> users (user_id));
+joinable!(games -> rooms (room_id));
+joinable!(rounds -> games (game_id));
 joinable!(users -> rooms (room_id));
 
 allow_tables_to_appear_in_same_query!(
     captions,
+    games,
     rooms,
+    rounds,
     users,
 );
