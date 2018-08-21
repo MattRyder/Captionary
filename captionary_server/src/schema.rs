@@ -5,6 +5,7 @@ table! {
         points -> Int4,
         published_at -> Timestamptz,
         user_id -> Int4,
+        round_id -> Int4,
     }
 }
 
@@ -31,6 +32,8 @@ table! {
         game_id -> Int4,
         image_url -> Text,
         created_at -> Timestamptz,
+        submission_closed_at -> Nullable<Timestamptz>,
+        finished_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -45,6 +48,7 @@ table! {
     }
 }
 
+joinable!(captions -> rounds (round_id));
 joinable!(captions -> users (user_id));
 joinable!(games -> rooms (room_id));
 joinable!(rounds -> games (game_id));

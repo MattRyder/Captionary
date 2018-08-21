@@ -1,13 +1,14 @@
 use chrono::{NaiveDateTime, Utc};
 use diesel;
 use diesel::pg::PgConnection;
-use rocket::request::FromForm;
-use diesel::prelude::{Identifiable, Insertable, RunQueryDsl};
+use diesel::prelude::*;
+use diesel::result::Error;
+use diesel::SaveChangesDsl;
 use frank_jwt::{encode, Algorithm};
 use std::env;
 
-use schema::users;
 use models::room::Room;
+use schema::users;
 
 const ENV_JWT_ISSUER: &'static str = "JWT_ISSUER";
 const ENV_JWT_SECRET: &'static str = "JWT_SECRET";
@@ -26,14 +27,14 @@ pub struct User {
 
 #[derive(Serialize, Deserialize, FromForm)]
 pub struct UserParams {
-    pub username: String
+    pub username: String,
 }
 
 #[derive(AsChangeset, Identifiable)]
-#[table_name="users"]
+#[table_name = "users"]
 pub struct AddToRoomParams {
     pub id: i32,
-    pub room_id: Option<i32>
+    pub room_id: Option<i32>,
 }
 
 #[derive(Insertable, Debug)]
@@ -45,6 +46,10 @@ pub struct NewUser<'a> {
 }
 
 impl User {
+    pub fn find(conn: &PgConnection, user_id: i32) -> Result<User, Error> {
+        users::table.find(user_id).first::<User>(conn)
+    }
+
     pub fn create<'a>(conn: &PgConnection, user_params: &UserParams) -> Option<User> {
         let token = Self::generate_token(&user_params.username).unwrap();
 
@@ -60,9 +65,22 @@ impl User {
             .ok()
     }
 
+    pub fn join_room(&self, conn: &PgConnection, room: &Room) -> bool {
+        if room.can_be_joined(&conn) {
+            let params = AddToRoomParams {
+                id: self.id,
+                room_id: Some(room.id),
+            };
+
+            return params.save_changes::<User>(&conn).is_ok();
+        }
+
+        return false;
+    }
+
     fn generate_token(username: &String) -> Option<String> {
         if username.is_empty() {
-            return None
+            return None;
         }
 
         let jwt_secret =
@@ -89,11 +107,12 @@ impl User {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dotenv::dotenv;
 
     #[test]
     fn generate_token_should_create_token() {
-        env::set_var("JWT_SECRET", fake!(Lorem.word));
-        env::set_var("JWT_ISSUER", fake!(Lorem.word));
+        dotenv().ok();
+
         let expected_header = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
 
         let username = fake!(Internet.user_name);
@@ -102,20 +121,19 @@ mod tests {
         match token {
             Some(token_str) => {
                 let expected_parts_count = 3;
-                let parts : Vec<&str> = token_str.split('.').collect();
+                let parts: Vec<&str> = token_str.split('.').collect();
                 assert_eq!(expected_parts_count, parts.len());
 
                 let actual_header = parts.first().unwrap();
                 assert_eq!(&expected_header, actual_header);
-            },
-            None => assert!(false)
+            }
+            None => assert!(false),
         }
     }
 
     #[test]
     fn generate_token_should_return_none_for_no_username() {
-        env::set_var("JWT_SECRET", fake!(Lorem.word));
-        env::set_var("JWT_ISSUER", fake!(Lorem.word));
+        dotenv().ok();
 
         let username = String::new();
         let token = User::generate_token(&username);

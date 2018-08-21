@@ -5,6 +5,7 @@ authors = ["Matt Ryder <matt@mattryder.co.uk>"]
 
 [dependencies]
 chrono = { version = "0.4.0", features = ["serde"] }
+curl = "0.4.14"
 diesel = { version = "1.0.0", features = ["postgres", "chrono"] }
 dotenv = "0.9.0"
 dotenv_codegen = "0.11.0"
