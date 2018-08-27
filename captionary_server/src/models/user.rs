@@ -65,17 +65,18 @@ impl User {
             .ok()
     }
 
-    pub fn join_room(&self, conn: &PgConnection, room: &Room) -> bool {
-        if room.can_be_joined(&conn) {
-            let params = AddToRoomParams {
-                id: self.id,
-                room_id: Some(room.id),
-            };
+    pub fn join_room(&self, conn: &PgConnection, room: &Room) -> Result<User, Error> {
+        match room.can_be_joined(&conn) {
+            true => {
+                let params = AddToRoomParams {
+                    id: self.id,
+                    room_id: Some(room.id),
+                };
 
-            return params.save_changes::<User>(&conn).is_ok();
+                params.save_changes::<User>(&conn)
+            },
+            false => Err(Error::NotFound)
         }
-
-        return false;
     }
 
     fn generate_token(username: &String) -> Option<String> {

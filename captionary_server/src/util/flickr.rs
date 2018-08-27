@@ -51,7 +51,6 @@ impl Flickr {
             Some(response) => Some(response.photos.photo[0].to_string()),
             None => None
         }
-        
     }
 
     fn get_flickr_response() -> Option<FlickrResponseContainer> {
