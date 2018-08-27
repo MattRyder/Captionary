@@ -18,6 +18,7 @@ use database::DatabaseConnection;
 use serde_json::{ser, de};
 
 use models::round::Round;
+use models::game::Game;
 
 #[derive(Clone)]
 pub struct Credentials {
@@ -30,8 +31,10 @@ pub struct Credentials {
 pub enum Message {
     SubmissionClosed(i32),
     RoundFinished(i32),
+    StartRoundForGame(i32)
 }
 
+#[derive(Clone)]
 pub struct Client {
     credentials: Credentials,
 }
@@ -42,13 +45,15 @@ impl Client {
             credentials: server_credentials,
         } 
     } 
-    pub fn consume(&self, db_connection: DatabaseConnection) {
+    pub fn consume(amqp_client: Client, db_connection: DatabaseConnection) {
         let queue_name = "Game.RoundEvents";
 
-        let user = self.credentials.username.to_string();
-        let pass = self.credentials.password.to_string();
+        let client = amqp_client.clone();
 
-        let funct = |message: &Delivery, connection: &DatabaseConnection| {
+        // let user = self.credentials.username.to_string();
+        // let pass = self.credentials.password.to_string();
+
+        let funct = |client: &Client, message: &Delivery, connection: &DatabaseConnection| {
             let message_data = message.data.clone();
             let foo = String::from_utf8(message_data).unwrap();
             let data : Result<Message, _> = de::from_str(&foo);
@@ -56,6 +61,11 @@ impl Client {
             match data {
                 Ok(message) => {
                     match message {
+                        Message::StartRoundForGame(game_id) => {
+                            let game = Game::find(&connection, game_id).unwrap();
+                            println!("Starting Round for Game: {}", game_id);
+                            game.start_round(&connection, &client);
+                        },
                         Message::SubmissionClosed(round_id) => {
                             println!("Round {}: Submission Closed", round_id);
                             let round = Round::find(&connection, round_id).unwrap();
@@ -65,6 +75,11 @@ impl Client {
                             println!("Round {}: Finished", round_id);
                             let round = Round::find(&connection, round_id).unwrap();
                             round.set_finished(&connection);
+
+                            let game = Game::find(&connection, round.game_id).unwrap();
+                            if game.can_start_round(&connection) {
+                                client.publish(Message::StartRoundForGame(game.id), Duration::milliseconds(10 * 1000));
+                            }
                         }
                     }
                 },
@@ -75,10 +90,10 @@ impl Client {
         };
 
         Runtime::new().unwrap().block_on(
-            TcpStream::connect(&self.credentials.host).and_then(|stream| {
+            TcpStream::connect(&amqp_client.credentials.host).and_then(|stream| {
                 lapin::client::Client::connect(stream, ConnectionOptions {
-                    username: user,
-                    password: pass,
+                    username: amqp_client.credentials.username,
+                    password: amqp_client.credentials.password,
                     ..Default::default()
                 })
             }).and_then(|(client, heartbeat)| {
@@ -92,7 +107,7 @@ impl Client {
                         println!("AMQP Client now consuming...");
 
                         stream.for_each(move |message| {
-                            funct(&message, &db_connection);
+                            funct(&client, &message, &db_connection);
                             ch.basic_ack(message.delivery_tag, false)
                         })
                     })

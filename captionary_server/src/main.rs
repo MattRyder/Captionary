@@ -1,6 +1,5 @@
 #![feature(plugin, custom_derive)]
 #![plugin(rocket_codegen)]
-
 #![warn(unused_extern_crates)]
 
 #[macro_use]
@@ -37,8 +36,6 @@ use serde_json::Value;
 use std::env;
 use std::thread;
 
-use database::ConnectionPool;
-
 fn main() {
     dotenv().ok();
 
@@ -58,7 +55,9 @@ fn main() {
     });
 
     let conn = database::DatabaseConnection(establish_db_connection().get().unwrap());
-    create_amqp_client().consume(conn);
+
+    let client = create_amqp_client();
+    amqp::Client::consume(client, conn);
 }
 
 #[catch(404)]

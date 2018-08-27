@@ -6,10 +6,13 @@ use diesel::prelude::{Insertable, QueryDsl, Queryable, RunQueryDsl};
 use diesel::result::Error;
 use diesel::SaveChangesDsl;
 
+use models::game::Game;
 use schema::rounds;
 use util::flickr::Flickr;
 
-#[derive(Identifiable, Queryable, Debug)]
+#[derive(Associations, Identifiable, Queryable, Debug)]
+#[table_name = "rounds"]
+#[belongs_to(Game)]
 pub struct Round {
     pub id: i32,
     pub game_id: i32,
