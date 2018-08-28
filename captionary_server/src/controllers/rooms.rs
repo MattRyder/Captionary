@@ -24,9 +24,10 @@ fn join(
 
     match user.join_room(&connection, &room) {
         Ok(updated_user) => {
-            let game = Game::create(&connection, room.id).unwrap();
-
-            amqp_client.publish(Message::StartRoundForGame(game.id), Duration::milliseconds(5 * 1000));
+            amqp_client.publish(
+                Message::StartGameForRoom(room.id),
+                Duration::milliseconds(5 * 1000)
+            );
 
             Ok(Json(json!({"user" : updated_user})))
         },

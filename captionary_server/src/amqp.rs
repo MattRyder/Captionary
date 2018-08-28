@@ -29,9 +29,10 @@ pub struct Credentials {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Message {
+    StartGameForRoom(i32),
+    StartRoundForGame(i32),
     SubmissionClosed(i32),
     RoundFinished(i32),
-    StartRoundForGame(i32)
 }
 
 #[derive(Clone)]
@@ -50,9 +51,6 @@ impl Client {
 
         let client = amqp_client.clone();
 
-        // let user = self.credentials.username.to_string();
-        // let pass = self.credentials.password.to_string();
-
         let funct = |client: &Client, message: &Delivery, connection: &DatabaseConnection| {
             let message_data = message.data.clone();
             let foo = String::from_utf8(message_data).unwrap();
@@ -61,15 +59,33 @@ impl Client {
             match data {
                 Ok(message) => {
                     match message {
+                        Message::StartGameForRoom(room_id) => {
+                            let game = Game::create(&connection, room_id).unwrap();
+                            client.publish(
+                                Message::StartRoundForGame(game.id),
+                                Duration::milliseconds(5 * 1000)
+                            )
+                        },
                         Message::StartRoundForGame(game_id) => {
-                            let game = Game::find(&connection, game_id).unwrap();
                             println!("Starting Round for Game: {}", game_id);
-                            game.start_round(&connection, &client);
+                            
+                            let game = Game::find(&connection, game_id).unwrap();
+                            let round = game.start_round(&connection).unwrap();
+
+                            client.publish(
+                                Message::SubmissionClosed(round.id),
+                                Duration::milliseconds(30 * 1000)
+                            );
                         },
                         Message::SubmissionClosed(round_id) => {
                             println!("Round {}: Submission Closed", round_id);
                             let round = Round::find(&connection, round_id).unwrap();
                             round.set_submission_closed(&connection);
+
+                            client.publish(
+                                Message::RoundFinished(round.id),
+                                Duration::milliseconds(15 * 1000)
+                            );
                         },
                         Message::RoundFinished(round_id) => {
                             println!("Round {}: Finished", round_id);
@@ -79,6 +95,13 @@ impl Client {
                             let game = Game::find(&connection, round.game_id).unwrap();
                             if game.can_start_round(&connection) {
                                 client.publish(Message::StartRoundForGame(game.id), Duration::milliseconds(10 * 1000));
+                            } else {
+                                // Close the game off, declare a winner:
+                                game.set_finished(&connection).unwrap();
+                                client.publish(
+                                    Message::StartGameForRoom(game.room_id),
+                                    Duration::milliseconds(5 * 1000)
+                                )
                             }
                         }
                     }

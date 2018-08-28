@@ -1,11 +1,9 @@
-use amqp::{Client, Message};
-use chrono::Duration;
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, Utc};
 use diesel;
 use diesel::pg::PgConnection;
 use diesel::prelude::{Identifiable, Insertable, QueryDsl, RunQueryDsl};
 use diesel::result::Error;
-use diesel::BelongingToDsl;
+use diesel::{BelongingToDsl, SaveChangesDsl};
 use models::round::Round;
 use schema::games;
 
@@ -24,6 +22,13 @@ pub struct Game {
 #[table_name = "games"]
 pub struct NewGame {
     room_id: i32,
+}
+
+#[derive(AsChangeset, Identifiable)]
+#[table_name = "games"]
+pub struct GameFinishedParams {
+    pub id: i32,
+    pub finished_at: Option<NaiveDateTime>
 }
 
 impl Game {
@@ -55,17 +60,20 @@ impl Game {
         round_count >= 0 && round_count < max_rounds
     }
 
-    pub fn start_round(&self, connection: &PgConnection, amqp_client: &Client) {
-        if self.can_start_round(&connection) {
-            let round = Round::create(&connection, self.id).unwrap();
-
-            let message = Message::SubmissionClosed(round.id);
-            let event_delay = Duration::milliseconds(30 * 1000);
-            amqp_client.publish(message, event_delay);
-
-            let message2 = Message::RoundFinished(round.id);
-            let event_delay2 = Duration::milliseconds(60 * 1000);
-            amqp_client.publish(message2, event_delay2);
+    pub fn start_round(&self, connection: &PgConnection) -> Option<Round> {
+        match self.can_start_round(&connection) {
+            true => Round::create(&connection, self.id),
+            false => None
         }
     }
+
+    pub fn set_finished(&self, connection: &PgConnection) -> Result<Self, Error> {
+        let params = GameFinishedParams {
+            id: self.id,
+            finished_at: Some(Utc::now().naive_utc()),
+        };
+
+        params.save_changes::<Game>(connection)
+    }
+
 }
