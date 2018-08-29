@@ -9,8 +9,6 @@ use chrono::Duration;
 use amqp::{Client, Message};
 use models::room::Room;
 use models::user::User;
-use models::game::Game;
-use models::round::Round;
 
 #[post("/<room_id>/join/<user_id>")]
 fn join(

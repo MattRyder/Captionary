@@ -1,7 +1,9 @@
+#![allow(proc_macro_derive_resolution_fallback)]
+
 use chrono::{NaiveDateTime, Utc};
 use diesel;
 use diesel::pg::PgConnection;
-use diesel::prelude::{Identifiable, Insertable, QueryDsl, RunQueryDsl};
+use diesel::prelude::{QueryDsl, RunQueryDsl};
 use diesel::result::Error;
 use diesel::{BelongingToDsl, SaveChangesDsl};
 use models::round::Round;

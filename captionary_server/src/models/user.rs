@@ -1,3 +1,5 @@
+#![allow(proc_macro_derive_resolution_fallback)]
+
 use chrono::{NaiveDateTime, Utc};
 use diesel;
 use diesel::pg::PgConnection;
@@ -108,6 +110,7 @@ impl User {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use fake::faker::*;
     use dotenv::dotenv;
 
     #[test]

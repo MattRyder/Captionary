@@ -12,8 +12,6 @@ extern crate rocket;
 extern crate rocket_contrib;
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
-extern crate fake;
 extern crate curl;
 extern crate frank_jwt;
 extern crate futures;

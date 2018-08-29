@@ -1,3 +1,5 @@
+#![allow(proc_macro_derive_resolution_fallback)]
+
 use chrono::NaiveDateTime;
 use diesel;
 use diesel::pg::PgConnection;
@@ -48,13 +50,16 @@ impl Room {
     pub fn create<'a>(conn: &PgConnection) -> Result<Room, Error> {
         let mut generator = Generator::with_naming(Name::Numbered);
 
-        let room_name = generator.next().unwrap();
-        // let mut room_name: String;
-        // while {
-            // room_name = generator.next().unwrap();
-            // let present = Self::is_name_available(conn, &room_name);
-        //     present == false
-        // } {}
+
+        let mut room_name : String;
+
+        loop {
+            room_name = generator.next().unwrap();
+            let present = Self::is_name_available(conn, &room_name);
+            println!("Room slug {}: {} present", &room_name, if present { "IS" } else { "NOT" });
+
+            if !present { break }
+        }
 
         let new_room = NewRoom {
             name: &room_name.to_string(),
