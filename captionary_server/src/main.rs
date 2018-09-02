@@ -20,6 +20,7 @@ extern crate names;
 extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate tokio;
+extern crate ws;
 
 pub mod amqp;
 pub mod controllers;
@@ -27,6 +28,7 @@ pub mod database;
 pub mod models;
 pub mod schema;
 pub mod util;
+pub mod web_socket;
 
 use dotenv::dotenv;
 use rocket_contrib::Json;
@@ -37,23 +39,38 @@ use std::thread;
 fn main() {
     dotenv().ok();
 
-    let conn_pool = establish_db_connection();
+    // let conn_pool = establish_db_connection();
 
-    thread::spawn(|| {
-        rocket::ignite()
-            .manage(conn_pool)
-            .manage(create_amqp_client())
-            .mount(
-                "/api/v1/captions",
-                routes![controllers::captions::index, controllers::captions::show],
-            ).mount("/api/v1/users", routes![controllers::users::create])
-            .mount("/api/v1/rooms", routes![controllers::rooms::join])
-            .catch(catchers![not_found])
-            .launch();
+    // thread::spawn(|| {
+    //     rocket::ignite()
+    //         .manage(conn_pool)
+    //         .manage(create_amqp_client())
+    //         .mount(
+    //             "/api/v1/captions",
+    //             routes![controllers::captions::index, controllers::captions::show],
+    //         ).mount("/api/v1/users", routes![controllers::users::create])
+    //         .mount("/api/v1/rooms", routes![controllers::rooms::join])
+    //         .catch(catchers![not_found])
+    //         .launch();
+    // });
+
+    thread::spawn(move || {
+        let websocket_env_var = "WEBSOCKET_HOST";
+
+        let websocket_host =
+            env::var(websocket_env_var)
+            .expect(&format!("Please set env var: {}", websocket_env_var));
+
+        let conn_pool = establish_db_connection();
+
+        web_socket::server::Server::connect(&websocket_host, conn_pool);
+
+        // web_socket::server::Server::connect(&websocket_host, conn_pool);
+
+        println!("Killing WebSocket Server...");
     });
 
     let conn = database::DatabaseConnection(establish_db_connection().get().unwrap());
-
     let client = create_amqp_client();
     amqp::Client::consume(client, conn);
 }
