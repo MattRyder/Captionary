@@ -1,3 +1,4 @@
+use std::sync::mpsc::Sender;
 use futures::future::Future;
 use futures::Stream;
 use lapin;
@@ -45,13 +46,14 @@ impl Client {
         Client { 
             credentials: server_credentials,
         } 
-    } 
-    pub fn consume(amqp_client: Client, db_connection: DatabaseConnection) {
+    }
+    
+    pub fn consume(amqp_client: Client, db_connection: DatabaseConnection, sender: Sender<Message>) {
         let queue_name = "Game.RoundEvents";
 
         let client = amqp_client.clone();
 
-        let funct = |client: &Client, message: &Delivery, connection: &DatabaseConnection| {
+        let funct = |client: &Client, message: &Delivery, connection: &DatabaseConnection, sender: &Sender<Message>| {
             let message_data = message.data.clone();
             let foo = String::from_utf8(message_data).unwrap();
             let data : Result<Message, _> = de::from_str(&foo);
@@ -61,6 +63,7 @@ impl Client {
                     match message {
                         Message::StartGameForRoom(room_id) => {
                             let game = Game::create(&connection, room_id).unwrap();
+                            sender.send(message).unwrap();
                             client.publish(
                                 Message::StartRoundForGame(game.id),
                                 Duration::milliseconds(5 * 1000)
@@ -130,7 +133,7 @@ impl Client {
                         println!("AMQP Client now consuming...");
 
                         stream.for_each(move |message| {
-                            funct(&client, &message, &db_connection);
+                            funct(&client, &message, &db_connection, &sender);
                             ch.basic_ack(message.delivery_tag, false)
                         })
                     })

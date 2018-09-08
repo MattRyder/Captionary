@@ -14,7 +14,26 @@
 
         var Message = {
             USER_LOGGED_IN: "UserLoginResponse",
+            CHAT_MESSAGE_RECIEVED: "ChatMessageResponse"
+        };
 
+        var Login = function(username) {
+            var loginParams = {
+                UserLogin: {
+                    username: username
+                }
+            };
+
+            socket.send(JSON.stringify(loginParams));
+        };
+
+        var SendMessage = function(messageText) {
+            var messageParams = {
+                ChatSent: {
+                    message_text: messageText
+                }
+            };
+            socket.send(JSON.stringify(messageParams));
         };
 
         socket.onmessage = function (e) {
@@ -22,8 +41,10 @@
             
             switch (data.type) {
                 case Message.USER_LOGGED_IN:
-                    debugger;
-                    console.log("Logged in as: " + data.username);
+                    console.log("Logged in as: " + data.user.username);
+                    break;
+                case Message.CHAT_MESSAGE_RECIEVED:
+                    console.log(data.username + " says: " + data.message_text);
                     break;
                 
                 default:
@@ -33,13 +54,7 @@
         };
 
         socket.onopen = function (e) {
-            var loginParams = {
-                UserLogin: {
-                    username: "Marvin the Martian"
-                }
-            };
 
-            socket.send(JSON.stringify(loginParams));
         };
     </script>
 

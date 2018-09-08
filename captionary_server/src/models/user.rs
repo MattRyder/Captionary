@@ -27,7 +27,7 @@ pub struct User {
     pub created_at: NaiveDateTime,
 }
 
-#[derive(Serialize, Deserialize, FromForm)]
+#[derive(Serialize, Deserialize)]
 pub struct UserParams {
     pub username: String,
 }
@@ -119,7 +119,7 @@ mod tests {
 
         let expected_header = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
 
-        let username = fake!(Internet.user_name);
+        let username = <Faker as Internet>::user_name();
         let token = User::generate_token(&username);
 
         match token {
