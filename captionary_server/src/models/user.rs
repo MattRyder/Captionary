@@ -3,7 +3,7 @@
 use chrono::{NaiveDateTime, Utc};
 use diesel;
 use diesel::pg::PgConnection;
-use diesel::prelude::*;
+use diesel::prelude::{QueryDsl, RunQueryDsl};
 use diesel::result::Error;
 use diesel::SaveChangesDsl;
 use frank_jwt::{encode, Algorithm};

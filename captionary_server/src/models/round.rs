@@ -7,12 +7,14 @@ use diesel::pg::PgConnection;
 use diesel::prelude::{QueryDsl, RunQueryDsl};
 use diesel::result::Error;
 use diesel::SaveChangesDsl;
+use diesel::BelongingToDsl;
 
+use models::caption::Caption;
 use models::game::Game;
 use schema::rounds;
 use util::flickr::Flickr;
 
-#[derive(Associations, Identifiable, Queryable, Debug)]
+#[derive(Associations, Identifiable, Queryable, Serialize, Deserialize, Debug)]
 #[table_name = "rounds"]
 #[belongs_to(Game)]
 pub struct Round {
@@ -46,6 +48,18 @@ struct RoundFinishedParams {
 }
 
 impl Round {
+    pub fn get_captions(&self, connection: &PgConnection) -> Result<Vec<Caption>, Error> {
+        Caption::belonging_to(self).load::<Caption>(connection)
+    }
+
+    pub fn get_winning_caption(&self, connection: &PgConnection) -> Option<Caption> {
+        if let Ok(captions) = self.get_captions(connection) {
+            captions.into_iter().max_by_key(|c| c.points)
+        } else {
+            None
+        }
+    }
+
     pub fn find(connection: &PgConnection, round_id: i32) -> Result<Round, Error> {
         rounds::table.find(round_id).first::<Round>(connection)
     }

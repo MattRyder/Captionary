@@ -2,27 +2,35 @@
 
 use chrono::NaiveDateTime;
 use diesel;
+use diesel::BelongingToDsl;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error;
 
+use models::round::Round;
+use models::vote::Vote;
+
 use schema::captions;
 use schema::captions::dsl::captions as captions_repo;
-use schema::captions::dsl::*;
+use schema::captions::dsl::id;
 
-#[derive(Serialize, Deserialize, Queryable, Debug)]
+#[derive(Associations, Identifiable, Serialize, Deserialize, Queryable, QueryableByName, Debug)]
+#[table_name = "captions"]
+#[belongs_to(Round)]
 pub struct Caption {
     pub id: i32,
     pub text: String,
     pub points: i32,
     pub published_at: NaiveDateTime,
     pub user_id: i32,
-    pub round_id: i32
+    pub round_id: i32,
 }
 
 #[derive(Insertable, Debug)]
 #[table_name = "captions"]
 pub struct NewCaption<'a> {
+    pub round_id: i32,
+    pub user_id: i32,
     pub text: &'a String,
 }
 
@@ -39,8 +47,13 @@ impl Caption {
             .first::<Caption>(connection)
     }
 
-    pub fn create<'a>(conn: &PgConnection, caption_text: &String) -> Caption {
-        let new_caption = NewCaption { text: caption_text };
+    pub fn create<'a>(
+        conn: &PgConnection,
+        round_id: i32,
+        user_id: i32,
+        text: &String,
+    ) -> Caption {
+        let new_caption = NewCaption { round_id, user_id, text };
 
         diesel::insert_into(captions::table)
             .values(&new_caption)
@@ -52,5 +65,9 @@ impl Caption {
         diesel::delete(captions::table.filter(id.eq(self.id)))
             .execute(conn)
             .is_ok()
+    }
+
+    pub fn get_votes(&self, connection: &PgConnection) -> Result<Vec<Vote>, Error> {
+        Vote::belonging_to(self).load::<Vote>(connection)
     }
 }

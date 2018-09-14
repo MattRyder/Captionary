@@ -1,4 +1,4 @@
-#![feature(plugin, custom_derive)]
+#![feature(plugin, custom_derive, vec_remove_item)]
 
 #[macro_use]
 extern crate diesel;
@@ -9,6 +9,7 @@ extern crate serde_json;
 extern crate chrono;
 extern crate curl;
 extern crate dotenv;
+extern crate fake;
 extern crate frank_jwt;
 extern crate futures;
 extern crate lapin_futures as lapin;
@@ -17,7 +18,6 @@ extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate tokio;
 extern crate ws;
-extern crate fake;
 
 pub mod amqp;
 pub mod database;
@@ -29,45 +29,57 @@ pub mod web_socket;
 use dotenv::dotenv;
 use std::env;
 use std::sync::mpsc::channel;
-use std::sync::Arc;
 use std::thread;
 
 use amqp::{Client, Credentials};
 use database::ConnectionPool;
 use web_socket::server::Server;
-use web_socket::user_handler::RoomsClientsMap;
 
 fn main() {
     dotenv().ok();
+    let (ws_event_tx, ws_event_rx) = channel();
 
-    let (tx, rx) = channel();
-
-    let rooms_clients_map = Arc::new(RoomsClientsMap::new());
-
-    thread::spawn(move || {
-        let websocket_env_var = "WEBSOCKET_HOST";
-
-        let websocket_host = env::var(websocket_env_var)
-            .expect(&format!("Please set env var: {}", websocket_env_var));
-
+    {
         let client = create_amqp_client();
         let conn_pool = establish_db_connection();
 
-        let mut ws_server = Server::default();
-        ws_server.connect(
-            &websocket_host,
-            conn_pool,
-            client,
-            rx,
-            Arc::clone(&rooms_clients_map),
-        );
+        let mut ws_server = Server::new(conn_pool, client);
 
-        println!("Killing WebSocket Server...");
-    });
+        {
+            let event_tx = ws_event_tx.clone();
+            thread::spawn(move || {
+                let conn = database::DatabaseConnection(establish_db_connection().get().unwrap());
+                let client = create_amqp_client();
+                amqp::Client::consume(client, conn, event_tx);
+            });
+        }
 
-    let conn = database::DatabaseConnection(establish_db_connection().get().unwrap());
-    let client = create_amqp_client();
-    amqp::Client::consume(client, conn, tx);
+        {
+            let event_tx = ws_event_tx.clone();
+
+            println!("Listening for incoming WebSocket Clients...");
+            thread::spawn(|| {
+                let client = create_amqp_client();
+                let conn_pool = establish_db_connection();
+
+                let websocket_env_var = "WEBSOCKET_HOST";
+
+                let websocket_host = env::var(websocket_env_var)
+                    .expect(&format!("Please set env var: {}", websocket_env_var));
+
+                let mut ws_server = Server::new(conn_pool, client);
+                ws_server.connect(&websocket_host, event_tx);
+                println!("Connection over...");
+            });
+        }
+
+        {
+            println!("Waiting for WebSocket Events to be raised...");
+            ws_server.handle_events(ws_event_rx);
+        }
+
+        println!("Captionary Server booted...");
+    }
 }
 
 fn create_amqp_client() -> Client {

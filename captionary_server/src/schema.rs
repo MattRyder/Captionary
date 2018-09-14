@@ -1,5 +1,3 @@
-#![allow(proc_macro_derive_resolution_fallback)]
-
 table! {
     captions (id) {
         id -> Int4,
@@ -50,11 +48,22 @@ table! {
     }
 }
 
+table! {
+    votes (id) {
+        id -> Int4,
+        user_id -> Int4,
+        caption_id -> Int4,
+        submitted_at -> Timestamptz,
+    }
+}
+
 joinable!(captions -> rounds (round_id));
 joinable!(captions -> users (user_id));
 joinable!(games -> rooms (room_id));
 joinable!(rounds -> games (game_id));
 joinable!(users -> rooms (room_id));
+joinable!(votes -> captions (caption_id));
+joinable!(votes -> users (user_id));
 
 allow_tables_to_appear_in_same_query!(
     captions,
@@ -62,4 +71,5 @@ allow_tables_to_appear_in_same_query!(
     rooms,
     rounds,
     users,
+    votes,
 );

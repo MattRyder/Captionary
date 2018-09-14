@@ -1,25 +1,27 @@
-use std::sync::mpsc::Sender;
+use chrono::Duration;
+use database::DatabaseConnection;
 use futures::future::Future;
 use futures::Stream;
 use lapin;
-use lapin::message::Delivery;
 use lapin::channel::{
     BasicConsumeOptions, BasicProperties, BasicPublishOptions, ExchangeDeclareOptions,
-    QueueDeclareOptions, QueueBindOptions,
+    QueueBindOptions, QueueDeclareOptions,
 };
 use lapin::client::ConnectionOptions;
+use lapin::message::Delivery;
+use lapin::types::AMQPValue::{LongLongInt, LongString};
 use lapin::types::FieldTable;
-use lapin::types::AMQPValue::{LongString, LongLongInt};
+use serde_json::{de, ser};
 use std::net::SocketAddr;
 use tokio::executor::spawn;
 use tokio::net::TcpStream;
 use tokio::runtime::Runtime;
-use chrono::Duration;
-use database::DatabaseConnection;
-use serde_json::{ser, de};
 
-use models::round::Round;
+use std::sync::mpsc::Sender;
+use web_socket::event::Event;
+
 use models::game::Game;
+use models::round::Round;
 
 #[derive(Clone)]
 pub struct Credentials {
@@ -41,144 +43,206 @@ pub struct Client {
     credentials: Credentials,
 }
 
-impl Client { 
+impl Client {
     pub fn new(server_credentials: Credentials) -> Client {
-        Client { 
+        Client {
             credentials: server_credentials,
-        } 
+        }
     }
-    
-    pub fn consume(amqp_client: Client, db_connection: DatabaseConnection, sender: Sender<Message>) {
+
+    pub fn consume(
+        amqp_client: Client,
+        db_connection: DatabaseConnection,
+        ws_event_tx: Sender<Event>
+    ) {
         let queue_name = "Game.RoundEvents";
 
         let client = amqp_client.clone();
 
-        let funct = |client: &Client, message: &Delivery, connection: &DatabaseConnection, sender: &Sender<Message>| {
-            let message_data = message.data.clone();
-            let foo = String::from_utf8(message_data).unwrap();
-            let data : Result<Message, _> = de::from_str(&foo);
+        Runtime::new()
+            .unwrap()
+            .block_on(
+                TcpStream::connect(&amqp_client.credentials.host)
+                    .and_then(|stream| {
+                        lapin::client::Client::connect(
+                            stream,
+                            ConnectionOptions {
+                                username: amqp_client.credentials.username,
+                                password: amqp_client.credentials.password,
+                                ..Default::default()
+                            },
+                        )
+                    }).and_then(|(client, heartbeat)| {
+                        spawn(heartbeat.map_err(|_| ()));
+                        client.create_channel()
+                    }).and_then(move |channel| {
+                        let ch = channel.clone();
 
-            match data {
-                Ok(message) => {
-                    match message {
-                        Message::StartGameForRoom(room_id) => {
-                            let game = Game::create(&connection, room_id).unwrap();
-                            sender.send(message).unwrap();
-                            client.publish(
-                                Message::StartRoundForGame(game.id),
-                                Duration::milliseconds(5 * 1000)
-                            )
-                        },
-                        Message::StartRoundForGame(game_id) => {
-                            println!("Starting Round for Game: {}", game_id);
-                            
-                            let game = Game::find(&connection, game_id).unwrap();
-                            let round = game.start_round(&connection).unwrap();
+                        channel
+                            .queue_declare(queue_name, QueueDeclareOptions::default(), FieldTable::new()
+                            ).and_then(move |queue| {
+                                channel.basic_consume(&queue, "cap_consumer_1", BasicConsumeOptions::default(), FieldTable::default())
+                            }).and_then(move |stream| {
+                                println!("AMQP Client now consuming...");
 
-                            client.publish(
-                                Message::SubmissionClosed(round.id),
-                                Duration::milliseconds(30 * 1000)
-                            );
-                        },
-                        Message::SubmissionClosed(round_id) => {
-                            println!("Round {}: Submission Closed", round_id);
-                            let round = Round::find(&connection, round_id).unwrap();
-                            round.set_submission_closed(&connection);
-
-                            client.publish(
-                                Message::RoundFinished(round.id),
-                                Duration::milliseconds(15 * 1000)
-                            );
-                        },
-                        Message::RoundFinished(round_id) => {
-                            println!("Round {}: Finished", round_id);
-                            let round = Round::find(&connection, round_id).unwrap();
-                            round.set_finished(&connection);
-
-                            let game = Game::find(&connection, round.game_id).unwrap();
-                            if game.can_start_round(&connection) {
-                                client.publish(Message::StartRoundForGame(game.id), Duration::milliseconds(10 * 1000));
-                            } else {
-                                // Close the game off, declare a winner:
-                                game.set_finished(&connection).unwrap();
-                                client.publish(
-                                    Message::StartGameForRoom(game.room_id),
-                                    Duration::milliseconds(5 * 1000)
-                                )
-                            }
-                        }
-                    }
-                },
-                Err(_) => (
-                    panic!("Fucked up message parsing from json")
-                )
-            }
-        };
-
-        Runtime::new().unwrap().block_on(
-            TcpStream::connect(&amqp_client.credentials.host).and_then(|stream| {
-                lapin::client::Client::connect(stream, ConnectionOptions {
-                    username: amqp_client.credentials.username,
-                    password: amqp_client.credentials.password,
-                    ..Default::default()
-                })
-            }).and_then(|(client, heartbeat)| {
-                spawn(heartbeat.map_err(|_| ()));
-                client.create_channel()
-            }).and_then(move |channel| {
-                let ch = channel.clone();
-
-                channel.queue_declare(queue_name, QueueDeclareOptions::default(), FieldTable::new()).and_then(move |queue| {
-                    channel.basic_consume(&queue, "cap_consumer_1", BasicConsumeOptions::default(), FieldTable::default())}).and_then(move |stream| {
-                        println!("AMQP Client now consuming...");
-
-                        stream.for_each(move |message| {
-                            funct(&client, &message, &db_connection, &sender);
-                            ch.basic_ack(message.delivery_tag, false)
-                        })
-                    })
-                }),
+                                stream.for_each(move |message| {
+                                    Client::handle_message(&client, &message, &db_connection, &ws_event_tx);
+                                    ch.basic_ack(message.delivery_tag, false)
+                                })
+                            })
+                    }),
             ).expect("runtime error");
     }
 
     pub fn publish(&self, message: Message, acknowledge_in: Duration) {
         let queue_name = "Game.RoundEvents";
 
-        println!("AMQP: Publishing message {:?}, to be read in: {:?}", &message, acknowledge_in);
+        println!(
+            "AMQP: Publishing message {:?}, to be read in: {:?}",
+            &message, acknowledge_in
+        );
 
         let user = self.credentials.username.to_string();
         let pass = self.credentials.password.to_string();
 
         let mut headers = FieldTable::new();
-        headers.insert("x-delay".into(), LongLongInt(acknowledge_in.num_milliseconds()));
+        headers.insert(
+            "x-delay".into(),
+            LongLongInt(acknowledge_in.num_milliseconds()),
+        );
 
-        Runtime::new().unwrap().block_on(
-            TcpStream::connect(&self.credentials.host).and_then(|stream| {
-                lapin::client::Client::connect(stream, ConnectionOptions {
-                    username: user,
-                    password: pass,
-                    ..Default::default()
-                })
-            }).and_then(|(client, _)| client.create_channel())
-            .and_then(move |channel| {
-                channel.queue_declare(queue_name, QueueDeclareOptions::default(), FieldTable::new()).and_then(move |_| {
-                    let mut args = FieldTable::new();
-                    args.insert("x-delayed-type".into(), LongString("direct".into()));
+        Runtime::new()
+            .unwrap()
+            .block_on(
+                TcpStream::connect(&self.credentials.host)
+                    .and_then(|stream| {
+                        lapin::client::Client::connect(
+                            stream,
+                            ConnectionOptions {
+                                username: user,
+                                password: pass,
+                                ..Default::default()
+                            },
+                        )
+                    }).and_then(|(client, _)| client.create_channel())
+                    .and_then(move |channel| {
+                        channel
+                            .queue_declare(
+                                queue_name,
+                                QueueDeclareOptions::default(),
+                                FieldTable::new(),
+                            ).and_then(move |_| {
+                                let mut args = FieldTable::new();
+                                args.insert("x-delayed-type".into(), LongString("direct".into()));
 
-                    channel.exchange_declare("game-exchange", "x-delayed-message", ExchangeDeclareOptions::default(), args).and_then(move |_| {
-                        channel.queue_bind(queue_name, "game-exchange", "captionary-rk-1", QueueBindOptions::default(), FieldTable::new()).and_then(move |_| {
-                            channel.basic_publish(
-                                "game-exchange",
-                                "captionary-rk-1",
-                                ser::to_vec(&message).unwrap(),
-                                BasicPublishOptions::default(),
-                                BasicProperties::default().with_headers(headers),
-                            )
-                        })
-                    })
-                                
-                })
-            })
+                                channel
+                                    .exchange_declare(
+                                        "game-exchange",
+                                        "x-delayed-message",
+                                        ExchangeDeclareOptions::default(),
+                                        args,
+                                    ).and_then(move |_| {
+                                        channel
+                                            .queue_bind(
+                                                queue_name,
+                                                "game-exchange",
+                                                "captionary-rk-1",
+                                                QueueBindOptions::default(),
+                                                FieldTable::new(),
+                                            ).and_then(
+                                                move |_| {
+                                                    channel.basic_publish(
+                                                        "game-exchange",
+                                                        "captionary-rk-1",
+                                                        ser::to_vec(&message).unwrap(),
+                                                        BasicPublishOptions::default(),
+                                                        BasicProperties::default()
+                                                            .with_headers(headers),
+                                                    )
+                                                },
+                                            )
+                                    })
+                            })
+                    }),
             ).expect("runtime error");
+    }
+
+    pub fn handle_message(
+        client: &Client, message: &Delivery, connection: &DatabaseConnection,
+        ws_event_tx: &Sender<Event>
+    ) {
+        let message_data = message.data.clone();
+        let foo = String::from_utf8(message_data).unwrap();
+        let data: Result<Message, _> = de::from_str(&foo);
+
+        let first_game_delay_sec = 5;
+        let submission_length_sec = 30;
+        let voting_length_sec = 30;
+        let next_round_delay_sec = 30;
+
+        match data {
+            Ok(message) => {
+                match message {
+                    Message::StartGameForRoom(room_id) => {
+                        let game = Game::create(&connection, room_id).unwrap();
+
+                        client.publish(
+                            Message::StartRoundForGame(game.id),
+                            Duration::milliseconds(first_game_delay_sec * 1000),
+                        );
+
+                        let ws_event = Event::OnGameStart(room_id, game);
+                        ws_event_tx.send(ws_event).unwrap();
+                    }
+                    Message::StartRoundForGame(game_id) => {
+                        let game = Game::find(&connection, game_id).unwrap();
+                        let round = game.start_round(&connection).unwrap();
+
+                        client.publish(
+                            Message::SubmissionClosed(round.id),
+                            Duration::milliseconds(submission_length_sec * 1000),
+                        );
+
+                        let ws_event = Event::OnRoundStart(game.id, round);
+                        ws_event_tx.send(ws_event).unwrap();
+                    }
+                    Message::SubmissionClosed(round_id) => {
+                        let round = Round::find(&connection, round_id).unwrap();
+                        round.set_submission_closed(&connection);
+
+                        client.publish(
+                            Message::RoundFinished(round.id),
+                            Duration::milliseconds(voting_length_sec * 1000),
+                        );
+
+                        let ws_event = Event::OnSubmissionClosed(round.game_id, round);
+                        ws_event_tx.send(ws_event).unwrap();
+                    }
+                    Message::RoundFinished(round_id) => {
+                        let round = Round::find(&connection, round_id).unwrap();
+                        round.set_finished(&connection);
+
+                        let game = Game::find(&connection, round.game_id).unwrap();
+                        if game.can_start_round(&connection) {
+                            client.publish(
+                                Message::StartRoundForGame(game.id),
+                                Duration::milliseconds(next_round_delay_sec * 1000),
+                            );
+                        } else {
+                            // Close the game off, declare a winner:
+                            game.set_finished(&connection).unwrap();
+                            // client.publish(
+                            //     Message::StartGameForRoom(game.room_id),
+                            //     Duration::milliseconds(5 * 1000),
+                            // )
+                        }
+
+                        let ws_event = Event::OnRoundFinished(round.game_id, round);
+                        ws_event_tx.send(ws_event).unwrap();
+                    }
+                }
+            }
+            Err(_) => (panic!("Fucked up message parsing from json")),
+        }
     }
 }
