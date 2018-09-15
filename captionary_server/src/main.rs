@@ -23,8 +23,8 @@ pub mod amqp;
 pub mod database;
 pub mod models;
 pub mod schema;
-pub mod util;
 pub mod web_socket;
+pub mod flickr;
 
 use dotenv::dotenv;
 use std::env;

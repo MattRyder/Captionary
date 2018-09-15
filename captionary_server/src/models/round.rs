@@ -1,5 +1,6 @@
 #![allow(proc_macro_derive_resolution_fallback)]
 
+use std::env;
 use chrono::NaiveDateTime;
 use chrono::Utc;
 use diesel;
@@ -9,10 +10,10 @@ use diesel::result::Error;
 use diesel::SaveChangesDsl;
 use diesel::BelongingToDsl;
 
+use flickr::Flickr;
 use models::caption::Caption;
 use models::game::Game;
 use schema::rounds;
-use util::flickr::Flickr;
 
 #[derive(Associations, Identifiable, Queryable, Serialize, Deserialize, Debug)]
 #[table_name = "rounds"]
@@ -65,9 +66,11 @@ impl Round {
     }
 
     pub fn create<'a>(conn: &PgConnection, game_id: i32) -> Option<Round> {
+        let flickr_api_key = env::var("FLICKR_KEY").expect("Please set env_var FLICKR_KEY");
+
         let new_round = NewRound {
             game_id: game_id,
-            image_url: &Flickr::get_image_url().unwrap(),
+            image_url: &Flickr::get_image_url(&flickr_api_key).unwrap(),
         };
 
         diesel::insert_into(rounds::table)

@@ -2,13 +2,12 @@ use curl::easy::Easy;
 use serde_json::de;
 use std::env;
 
-pub struct Flickr {
-}
+pub struct Flickr {}
 
 #[derive(Deserialize, Debug)]
 struct FlickrResponseContainer {
     photos: FlickrResponse,
-    stat: String
+    stat: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -17,7 +16,7 @@ struct FlickrResponse {
     pages: i32,
     perpage: i32,
     total: i32,
-    photo: Vec<FlickrPhotoRecord>
+    photo: Vec<FlickrPhotoRecord>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -46,29 +45,33 @@ impl FlickrPhotoRecord {
 }
 
 impl Flickr {
-    pub fn get_image_url() -> Option<String> {
-        match Self::get_flickr_response() {
+    pub fn get_image_url(flickr_key: &String) -> Option<String> {
+        match Self::get_flickr_response(flickr_key) {
             Some(response) => Some(response.photos.photo[0].to_string()),
-            None => None
+            None => None,
         }
     }
 
-    fn get_flickr_response() -> Option<FlickrResponseContainer> {
-        let flickr_key = env::var("FLICKR_KEY").expect("Please set env var: FLICKR_KEY");
+    fn get_flickr_response(flickr_key: &String) -> Option<FlickrResponseContainer> {
         let mut flickr_response = Vec::new();
 
         let url = format!(
-            "https://api.flickr.com/services/rest/?method=flickr.interestingness.getList&api_key={}&format=json&nojsoncallback=1",
+            "https://api.flickr.com/services/rest/?method=flickr.interestingness.getList&api_key={}&format=json&nojsoncallback=1", 
             flickr_key
         );
 
         Flickr::http_get(&mut flickr_response, &url);
-        
-        let res = String::from_utf8(flickr_response).unwrap();
 
-        let json: Option<FlickrResponseContainer> = de::from_str(&res).ok();
+        if let Ok(res) = String::from_utf8(flickr_response) {
+            let json: Result<Option<FlickrResponseContainer>, _> = de::from_str(&res);
+            match json {
+                Ok(json) => json,
+                Err(_) => None
+            }
 
-        return json
+        } else {
+            None
+        }
     }
 
     fn http_get(response: &mut Vec<u8>, url_str: &String) {
@@ -94,15 +97,22 @@ mod tests {
     #[test]
     fn should_download_json() {
         dotenv().ok();
-
-        let json = Flickr::get_flickr_response();
-        assert!(json.is_some())
+        assert!(Flickr::get_flickr_response(&get_flickr_key()).is_some())
     }
 
     #[test]
     fn should_get_image_url() {
         dotenv().ok();
+        assert!(Flickr::get_image_url(&get_flickr_key()).is_some());
+    }
 
-        assert!(Flickr::get_image_url().is_some());
+    #[test]
+    fn should_return_none() {
+        let incorrect_flickr_key = String::from("");
+        assert_eq!(Flickr::get_image_url(&incorrect_flickr_key), None);
+    }
+
+    fn get_flickr_key() -> String {
+        env::var("FLICKR_KEY").expect("Please set env var: FLICKR_KEY")
     }
 }
