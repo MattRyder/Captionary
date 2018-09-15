@@ -1,6 +1,5 @@
 use curl::easy::Easy;
 use serde_json::de;
-use std::env;
 
 pub struct Flickr {}
 
@@ -92,6 +91,7 @@ impl Flickr {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
     use dotenv::dotenv;
 
     #[test]

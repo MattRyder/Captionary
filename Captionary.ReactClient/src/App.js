@@ -14,7 +14,7 @@ class App extends React.Component {
     super(props);
 
     this.state = {
-      hubConnection: null
+      
     }
   }
 
@@ -25,7 +25,7 @@ class App extends React.Component {
         <Switch>
           <Route exact path="/" component={HomeView} />
           <Route path="/join/:id" component={HomeView} />
-          <Route path="/play" component={GameView} />
+          <Route path="/game" component={GameView} />
           <Route path="/error/:id" component={ErrorView} />
         </Switch>
       </div>

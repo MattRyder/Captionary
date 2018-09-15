@@ -16,7 +16,7 @@ pub struct Client {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
     UserLogin { username: String },
-    JoinRoom { room_id: Option<i32> },
+    JoinRoom { room_id: Option<String> },
     ChatSent { message_text: String },
     CaptionVote { caption_id: i32 },
     SubmitCaption { round_id: i32, caption_text: String },

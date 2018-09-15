@@ -1,25 +1,23 @@
 import React from "react";
-import PropTypes from 'prop-types'
+import { connect } from "react-redux";
 
 import "./ImageContainer.css"
-import { connect } from "react-redux";
 
 const mapStateToProps = (state) => {
 	return { imageUrl: state.round.imageUrl };
 }
 
-class _ImageContainer extends React.Component {
-
+class ImageContainerComponent extends React.Component {
 	render() {
-		return (
+		return this.props.imageUrl ? (
 			<div className={"image-container " + (this.props.imageCentered ? 'is-centered' : '')}>
 				<img key={this.props}
 					src={this.props.imageUrl}
 					alt="ImageContainer" />
 			</div>
-		)
+		) : null;
 	}
 };
 
-const ImageContainer = connect(mapStateToProps, null)(_ImageContainer);
+const ImageContainer = connect(mapStateToProps, null)(ImageContainerComponent);
 export default ImageContainer;

@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from 'reactstrap';
 import connect from 'react-redux/lib/connect/connect';
 import Input from '../../Input/Input';
-import { SubmitCaptionAction } from '../../../actions/SubmitCaptionAction';
+// import { SubmitCaptionAction } from '../../../actions/SubmitCaptionAction';
 
 import './CaptionInputForm.css';
 
@@ -14,10 +14,10 @@ const mapStateToProps = (state) => {
 };
 
 const mapDispatchToProps = (dispatch) => {
-    return {
-        SubmitCaptionAction: (roomId, roundId, captionText) =>
-            dispatch(SubmitCaptionAction(roomId, roomId, captionText))
-    }
+    // return {
+    //     SubmitCaptionAction: (roomId, roundId, captionText) =>
+    //         dispatch(SubmitCaptionAction(roomId, roomId, captionText))
+    // }
 }
 
 /**
@@ -42,8 +42,8 @@ class _CaptionInputForm extends React.Component {
     }
 
     handleSubmit(e) {
-        this.props.SubmitCaptionAction(
-            this.props.sessionInfo.roomId, this.props.roundId, this.state.captionText);
+        // this.props.SubmitCaptionAction(
+        //     this.props.sessionInfo.roomId, this.props.roundId, this.state.captionText);
     }
 
     clearState() {

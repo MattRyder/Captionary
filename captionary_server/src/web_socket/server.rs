@@ -80,7 +80,7 @@ impl Server {
     }
 
     /// Adds the user to a Room
-    fn join_room(&self, client: &Client, room_id: Option<i32>) -> Option<ServerMessage> {
+    fn join_room(&self, client: &Client, room_name: Option<String>) -> Option<ServerMessage> {
         let client_idx = self
             .connected_clients
             .iter()
@@ -93,14 +93,17 @@ impl Server {
             return None;
         }
 
-        let connection = DatabaseConnection(self.db_connection_pool.get().unwrap());
+        let connection = self.get_db_connection();
 
-        let room_id = match room_id {
-            Some(room_id) => room_id,
-            None => Room::find_available_room_id(&connection),
+        let room = match room_name {
+            Some(room_name) => {
+                match Room::find(&connection, &room_name) {
+                    Ok(room) => room,
+                    Err(_) => Room::find_available_room(&connection)
+                }
+            }
+            None => Room::find_available_room(&connection),
         };
-
-        let room = Room::find(&connection, room_id).unwrap();
 
         let user = User::find(&connection, client.user_id.unwrap()).unwrap();
 

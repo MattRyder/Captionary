@@ -1,37 +1,26 @@
-import * as ActionTypes from '../constants/ActionTypes';
+import * as ActionTypes from "../constants/ActionTypes";
 
 const InitialState = {
-    hubConnection: null,
-    chatMessages: [],
-    sessionInfo: {
-        playerName: "",
-        roomId: ""
-    }
+  user: null,
+  room: null,
+  chatMessages: [],
 };
 
 const GameReducer = (state = InitialState, action) => {
-    switch (action.type) {
-        case ActionTypes.GAME_ACCESS_RESPONSE_ACTION:
-            console.log(
-                `Welcome to Room ${action.payload.roomId}, ${action.payload.playerName}`);
-            return Object.assign({}, state, {
-                sessionInfo: action.payload
-            });
-        case ActionTypes.SIGNALR_CONNECT_ACTION: {
-            state.hubConnection = action.payload.hubConnection;
-            state.hubConnection
-                .start()
-                .catch(err => action.payload.onErrorCallback());
-            return state;
-        }
-        case ActionTypes.RECEIVE_CHAT_MESSAGE_ACTION: {
-            return {
-                ...state, chatMessages: [...state.chatMessages, action.payload.message]
-            };
-        }
-        default:
-            return state;
-    }
+  switch (action.type) {
+    case ActionTypes.USER_LOGIN_RESPONSE_ACTION:
+      return Object.assign({}, state, { user: action.payload.user });
+    case ActionTypes.JOIN_ROOM_RESPONSE_ACTION:
+      return Object.assign({}, state, { room: action.payload.room });
+    // case ActionTypes.RECEIVE_CHAT_MESSAGE_ACTION: {
+    //   return {
+    //     ...state,
+    //     chatMessages: [...state.chatMessages, action.payload.message]
+    //   };
+    // }
+    default:
+      return state;
+  }
 };
 
 export default GameReducer;

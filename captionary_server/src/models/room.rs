@@ -4,18 +4,19 @@ use chrono::NaiveDateTime;
 use diesel;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use diesel::sql_query;
 use diesel::result::Error;
+use diesel::sql_query;
 use names::{Generator, Name};
 
-use schema::rooms;
 use models::user::User;
+use schema::rooms;
 use schema::rooms::dsl::rooms as rooms_repo;
 use schema::rooms::dsl::*;
 
-const ROOM_MAX_CAPACITY : i64 = 8;
+const ROOM_MAX_CAPACITY: i64 = 8;
 
 #[derive(Serialize, Deserialize, Identifiable, Queryable, Debug)]
+#[table_name = "rooms"]
 pub struct Room {
     pub id: i32,
     pub name: String,
@@ -31,9 +32,7 @@ pub struct NewRoom<'a> {
 #[derive(QueryableByName, Debug)]
 #[table_name = "rooms"]
 struct AvailableRoom {
-    id: i32,
     name: String,
-    created_at: NaiveDateTime,
 }
 
 impl Room {
@@ -43,22 +42,29 @@ impl Room {
             .expect("Failed to load Room list_all")
     }
 
-    pub fn find(conn: &PgConnection, room_id: i32) -> Result<Room, Error> {
-        rooms::table.find(room_id).first::<Room>(conn)
+    pub fn find(conn: &PgConnection, room_name: &String) -> Result<Room, Error> {
+        rooms::table
+            .filter(rooms::name.eq(room_name))
+            .first::<Room>(conn)
     }
 
     pub fn create<'a>(conn: &PgConnection) -> Result<Room, Error> {
         let mut generator = Generator::with_naming(Name::Numbered);
 
-
-        let mut room_name : String;
+        let mut room_name: String;
 
         loop {
             room_name = generator.next().unwrap();
             let present = Self::is_name_available(conn, &room_name);
-            println!("Room slug {}: {} present", &room_name, if present { "IS" } else { "NOT" });
+            println!(
+                "Room slug {}: {} present",
+                &room_name,
+                if present { "IS" } else { "NOT" }
+            );
 
-            if !present { break }
+            if !present {
+                break;
+            }
         }
 
         let new_room = NewRoom {
@@ -78,14 +84,15 @@ impl Room {
 
     pub fn get_user_count(&self, conn: &PgConnection) -> i64 {
         User::belonging_to(self)
-                .count()
-                .get_result(conn)
-                .ok().unwrap()
+            .count()
+            .get_result(conn)
+            .ok()
+            .unwrap()
     }
 
-    pub fn find_available_room_id(conn: &PgConnection) -> i32 {
+    pub fn find_available_room(conn: &PgConnection) -> Room {
         let find_room_sql = "
-            SELECT *
+            SELECT name
             FROM rooms
             WHERE id = (
                 SELECT room_id
@@ -96,17 +103,18 @@ impl Room {
                 LIMIT 1
             );";
 
-        let res : Vec<AvailableRoom> = sql_query(find_room_sql).load(conn).unwrap();
-        let first_room = res.first();
+        let mut chosen_room : Option<Room> = None;
 
-        match first_room {
-            Some(room) => room.id,
-            None => {
-                match Self::create(conn) {
-                    Ok(room) => room.id,
-                    Err(_) => 0
-                }
+        let query_result : Vec<AvailableRoom> = sql_query(find_room_sql).load(conn).unwrap();
+        if let Some(available_room) = query_result.first() {
+            if let Ok(room) = Room::find(conn, &available_room.name) {
+                chosen_room = Some(room);
             }
+        }
+
+        match chosen_room {
+            Some(room) => room,
+            None => Room::create(conn).unwrap(),
         }
     }
 

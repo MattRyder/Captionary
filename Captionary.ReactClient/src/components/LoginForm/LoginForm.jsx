@@ -1,17 +1,16 @@
-import React from 'react';
-import { Button } from 'reactstrap';
-import { connect } from 'react-redux';
+import React from "react";
+import { Button } from "reactstrap";
+import { connect } from "react-redux";
 
-import { GameRequestAccessAction } from '../../actions/GameRequestAccessAction';
+import { UserLoginAction } from "../../actions/WebSocketActions";
 
-import Input from '../Input/Input';
-import './LoginForm.css';
+import Input from "../Input/Input";
+import "./LoginForm.css";
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = dispatch => {
   return {
-    GameRequestAccessAction: (playerName, roomId) =>
-      dispatch(GameRequestAccessAction(playerName, roomId))
-  }
+    UserLoginAction: username => dispatch(UserLoginAction(username))
+  };
 };
 
 class LoginFormComponent extends React.Component {
@@ -19,36 +18,42 @@ class LoginFormComponent extends React.Component {
     super(props);
 
     this.state = {
-      playerName: "",
-    }
+      username: ""
+    };
 
     this.handleNameChange = this.handleNameChange.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
   }
 
   handleNameChange(e) {
-    this.setState({ playerName: e.target.value });
+    this.setState({ username: e.target.value });
   }
 
   onSubmit(e) {
     e.preventDefault();
-    this.props.GameRequestAccessAction(this.state.playerName, this.props.roomId);
+    this.props.UserLoginAction(this.state.username);
   }
 
   render() {
     return (
       <div className="login-form">
-        <Input onChange={this.handleNameChange}
+        <Input
+          onChange={this.handleNameChange}
           value={this.state.playerName}
-          placeholder="What is your name?" />
+          placeholder="What is your name?"
+        />
 
-        <Button color='success' block onClick={this.onSubmit}>
+        <Button color="success" block onClick={this.onSubmit}>
           Play
         </Button>
       </div>
-    )
+    );
   }
-};
+}
 
-const LoginForm = connect(null, mapDispatchToProps)(LoginFormComponent);
+const LoginForm = connect(
+  null,
+  mapDispatchToProps
+)(LoginFormComponent);
+
 export default LoginForm;

@@ -9,17 +9,24 @@ import ChatContainer from "../../Game/ChatContainer/ChatContainer";
 import './GameView.css';
 
 const mapStateToProps = (state) => {
-    return { sessionInfo: state.game.sessionInfo };
+    return { room: state.game.room };
 };
 
 class GameViewComponent extends React.Component {
+
+
+
     render() {
         return (
             <div className="game-container">
                 <div className="game">
-                    <CaptionCardList />
-                    <ImageContainer imageCentered={true} />
-                    <CaptionInputForm />
+                    { this.props.room ? 
+                        [
+                            <CaptionCardList />,
+                            <ImageContainer imageCentered={true} />,
+                            <CaptionInputForm />
+                        ] : ""
+                    }
                 </div>
                 <div className="game-chat">
                     <ChatContainer />
