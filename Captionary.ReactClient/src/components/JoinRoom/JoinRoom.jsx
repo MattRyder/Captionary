@@ -7,6 +7,8 @@ import { JoinRoomAction } from '../../actions/WebSocketActions';
 
 import './JoinRoom.css';
 
+const NO_ROOM_REQUESTED_TEXT = "No room requested. Click \"Join\" to find one.";
+
 const mapDispatchToProps = dispatch => {
     return {
         JoinRoomAction: roomId => dispatch(JoinRoomAction(roomId))
@@ -34,7 +36,7 @@ class JoinRoomComponent extends React.Component {
             <div className="join-room">
                 <div className="room-info">
                     <h2>Room</h2>
-                    <p>{this.state.roomId ? this.state.roomId : "No room requested."}</p>
+                    <p>{this.state.roomId ? this.state.roomId : NO_ROOM_REQUESTED_TEXT }</p>
                 </div>
                 <Button color="success" block onClick={this.onClick}>
                 Join

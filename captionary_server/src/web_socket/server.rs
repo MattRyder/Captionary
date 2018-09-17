@@ -25,9 +25,13 @@ pub enum ServerMessage {
     },
     UserJoinedRoomResponse {
         room: Room,
-        user: User,
+    },
+    BroadcastUserJoinedRoom {
+        user_id: i32,
+        username: String
     },
     ChatMessageResponse {
+        user_id: i32,
         username: String,
         message_text: String,
     },
@@ -80,7 +84,7 @@ impl Server {
     }
 
     /// Adds the user to a Room
-    fn join_room(&self, client: &Client, room_name: Option<String>) -> Option<ServerMessage> {
+    fn join_room(&self, client: &Client, room_name: Option<String>) -> Option<Room> {
         let client_idx = self
             .connected_clients
             .iter()
@@ -116,10 +120,7 @@ impl Server {
                 );
             }
 
-            Some(ServerMessage::UserJoinedRoomResponse {
-                room,
-                user,
-            })
+            Some(room)
         } else {
             None
         }
@@ -189,13 +190,25 @@ impl Server {
                                             );
                                         }
 
-                                        self.send_message_to_clients(
+                                        self.send_message_to_client(
+                                            &client,
                                             &ServerMessage::UserLoginResponse { user });
                                     }
                                 }
                                 ClientMessage::JoinRoom { room_id } => {
-                                    if let Some(server_message) = self.join_room(&client, room_id) {
-                                        self.send_message_to_clients(&server_message)
+                                    if let Some(room) = self.join_room(&client, room_id) {
+                                        let connection = self.get_db_connection();
+                                        let client = self.connected_clients.get(client_idx).unwrap();
+                                        let user = User::find(&connection, client.user_id.unwrap()).unwrap();
+                                        
+                                        let self_response = ServerMessage::UserJoinedRoomResponse { room };
+                                        let other_response = ServerMessage::BroadcastUserJoinedRoom {
+                                            user_id: user.id,
+                                            username: user.username
+                                        };
+
+                                        self.send_message_to_client(&client, &self_response);
+                                        self.send_message_to_clients(&other_response);
                                     }
                                 }
                                 ClientMessage::SubmitCaption { round_id, caption_text } => {
@@ -212,11 +225,9 @@ impl Server {
                                             &caption_text,
                                         );
 
-                                        self.send_message_to_clients(
-                                            &ServerMessage::CaptionSubmittedResponse {
-                                                saved: true,
-                                                errors: None,
-                                            }
+                                        self.send_message_to_client(
+                                            &client,
+                                            &ServerMessage::CaptionSubmittedResponse { saved: true, errors: None }
                                         )
                                     }
                                 }
@@ -226,6 +237,7 @@ impl Server {
                                     if let Ok(user) = User::find(&connection, client.user_id.unwrap())
                                     {
                                         let response = ServerMessage::ChatMessageResponse {
+                                            user_id: user.id,
                                             username: user.username,
                                             message_text,
                                         };
@@ -240,7 +252,8 @@ impl Server {
                                     let user_id = client.user_id.unwrap();
                                     let vote = Vote::create(&connection, user_id, caption_id).unwrap();
 
-                                    self.send_message_to_clients(
+                                    self.send_message_to_client(
+                                        &client,
                                         &ServerMessage::VoteSubmittedResponse { vote }
                                     );
                                 }
@@ -265,6 +278,11 @@ impl Server {
             let response = response.clone();
             client.socket_handle.send(response).unwrap()
         }
+    }
+
+    fn send_message_to_client(&self, client: &Client, server_message: &ServerMessage) {
+        let response = WsMessage::Text(ser::to_string_pretty(server_message).unwrap());
+        client.socket_handle.send(response).unwrap()
     }
 
     pub fn connect(&mut self, websocket_host: &String, event_tx: Sender<Event>) {

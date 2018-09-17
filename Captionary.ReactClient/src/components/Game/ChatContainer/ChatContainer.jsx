@@ -5,7 +5,7 @@ import { Button } from "reactstrap";
 import { ChatFeed, Message } from "react-chat-ui";
 
 import Input from "../../Input/Input";
-// import { SendChatMessageAction } from "../../../actions/SendChatMessageAction";
+import { ChatMessageAction } from '../../../actions/WebSocketActions';
 
 import "./ChatContainer.css";
 
@@ -13,16 +13,15 @@ const KEY_ENTER = 13;
 
 const mapStateToProps = state => {
   return {
-    sessionInfo: state.game.sessionInfo,
+    user: state.game.user,
     chatMessages: state.game.chatMessages
   };
 };
 
 const mapDispatchToProps = dispatch => {
-  // return {
-  //   SendChatMessageAction: (roomId, message) =>
-  //     dispatch(SendChatMessageAction(roomId, message))
-  // };
+  return {
+    ChatMessageAction: (messageText) => dispatch(ChatMessageAction(messageText))
+  };
 };
 
 /**
@@ -56,9 +55,9 @@ class ChatContainerComponent extends React.Component {
       return;
     }
 
-    var msg = this.createMessage(0, this.props.sessionInfo.playerName, this.state.messageText);
+    // var msg = this.createMessage(0, this.props.user.username, this.state.messageText);
 
-    // this.props.SendChatMessageAction(this.props.sessionInfo.roomId, msg);
+    this.props.ChatMessageAction(this.state.messageText);
 
     this.setState({ messageText: "" });
   }

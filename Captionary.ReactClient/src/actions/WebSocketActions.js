@@ -1,11 +1,14 @@
 import {
   WEBSOCKET_INITIALIZED_ACTION,
   USER_LOGIN_ACTION,
-  JOIN_ROOM_ACTION
+  JOIN_ROOM_ACTION,
+  CHAT_MESSAGE_ACTION,
 } from "../constants/ActionTypes";
+
 import {
   USER_LOGIN_RESPONSE_ACTION,
-  JOIN_ROOM_RESPONSE_ACTION
+  JOIN_ROOM_RESPONSE_ACTION,
+  CHAT_MESSAGE_RESPONSE_ACTION
 } from "../constants/ActionTypes";
 
 export const WebSocketInitializedAction = socketHandle => ({
@@ -41,4 +44,20 @@ export const JoinRoomAction = roomId => ({
 export const JoinRoomResponseAction = room => ({
   type: JOIN_ROOM_RESPONSE_ACTION,
   payload: { room: room }
+});
+
+export const ChatMessageAction = messageText => ({
+  type: CHAT_MESSAGE_ACTION,
+  payload: {
+    ChatSent: { message_text: messageText }
+  }
+});
+
+export const ChatMessageResponseAction = (userId, username, messageText) => ({
+  type: CHAT_MESSAGE_RESPONSE_ACTION,
+  payload: {
+    userId: userId,
+    username: username,
+    messageText: messageText
+  }
 });

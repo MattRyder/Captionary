@@ -3,15 +3,20 @@ import * as ActionTypes from "../constants/ActionTypes";
 import {
   WebSocketInitializedAction,
   UserLoginResponseAction,
-  JoinRoomResponseAction
+  JoinRoomResponseAction,
+  ChatMessageResponseAction
 } from "../actions/WebSocketActions";
 
 import Sockette from "sockette";
 const WEBSOCKET_HOST = process.env.REACT_APP_WEBSOCKET_HOST;
 
+// Sockette consts
+const ECONNREFUSED = 1006;
+
 const Responses = {
   USER_LOGIN: "UserLoginResponse",
-  JOIN_ROOM: "UserJoinedRoomResponse"
+  JOIN_ROOM: "UserJoinedRoomResponse",
+  CHAT_MESSAGE: "ChatMessageResponse"
 };
 
 export const WebSocketMiddleware = store => {
@@ -27,6 +32,9 @@ export const WebSocketMiddleware = store => {
       case ActionTypes.USER_LOGIN_RESPONSE_ACTION:
         break;
       case ActionTypes.JOIN_ROOM_ACTION:
+        socketHandle.send(JSON.stringify(action.payload));
+        break;
+      case ActionTypes.CHAT_MESSAGE_ACTION:
         socketHandle.send(JSON.stringify(action.payload));
         break;
       default:
@@ -55,6 +63,10 @@ export const WebSocketInit = store => {
           store.dispatch(JoinRoomResponseAction(jsonResponse.room));
           store.dispatch(push("/game"));
           break;
+        case Responses.CHAT_MESSAGE:
+          store.dispatch(ChatMessageResponseAction(
+            jsonResponse.user_id, jsonResponse.username, jsonResponse.message_text));
+          break;
         default:
           console.log("Not covered: " + jsonResponse);
           break;
@@ -62,8 +74,12 @@ export const WebSocketInit = store => {
     },
     onreconnect: e => console.log("Reconnecting...", e),
     onmaximum: e => console.log("Stop Attempting!", e),
-    onclose: e => console.log("Closed!", e),
-    onerror: e => console.log("Error:", e)
+    onclose: e => {
+      if(e.code === ECONNREFUSED) {
+        store.dispatch(push("/error/503"));
+      }
+    },
+    onerror: e => console.log("Error: " + e)
   });
 
   store.dispatch(WebSocketInitializedAction(ws));
