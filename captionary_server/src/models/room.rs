@@ -15,7 +15,7 @@ use schema::rooms::dsl::*;
 
 const ROOM_MAX_CAPACITY: i64 = 8;
 
-#[derive(Serialize, Deserialize, Identifiable, Queryable, Debug)]
+#[derive(Serialize, Deserialize, Identifiable, Queryable, Debug, Clone)]
 #[table_name = "rooms"]
 pub struct Room {
     pub id: i32,

@@ -25,6 +25,7 @@ pub mod models;
 pub mod schema;
 pub mod web_socket;
 pub mod flickr;
+pub mod jwt;
 
 use dotenv::dotenv;
 use std::env;

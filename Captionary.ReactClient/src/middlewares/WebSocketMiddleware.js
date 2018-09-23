@@ -19,9 +19,19 @@ const Responses = {
   CHAT_MESSAGE: "ChatMessageResponse"
 };
 
+const authenticateMessage = (payload, user) => {
+  let firstKey = Object.keys(payload)[0];
+  if(firstKey) {
+    payload[firstKey]["access_token"] = user.token;
+  }
+
+  return payload;
+}
+
 export const WebSocketMiddleware = store => {
   return next => action => {
     let socketHandle = store.getState().websocket.socketHandle;
+    let user = store.getState().game.user;
 
     switch (action.type) {
       case ActionTypes.WEBSOCKET_INITIALIZED_ACTION:
@@ -32,10 +42,10 @@ export const WebSocketMiddleware = store => {
       case ActionTypes.USER_LOGIN_RESPONSE_ACTION:
         break;
       case ActionTypes.JOIN_ROOM_ACTION:
-        socketHandle.send(JSON.stringify(action.payload));
+        socketHandle.send(JSON.stringify(authenticateMessage(action.payload, user)));
         break;
       case ActionTypes.CHAT_MESSAGE_ACTION:
-        socketHandle.send(JSON.stringify(action.payload));
+        socketHandle.send(JSON.stringify(authenticateMessage(action.payload, user)));
         break;
       default:
         console.log("Not covered by WebSocketMiddleware: " + action.type);
@@ -60,7 +70,7 @@ export const WebSocketInit = store => {
           store.dispatch(UserLoginResponseAction(jsonResponse.user));
           break;
         case Responses.JOIN_ROOM:
-          store.dispatch(JoinRoomResponseAction(jsonResponse.room));
+          store.dispatch(JoinRoomResponseAction(jsonResponse.access_token, jsonResponse.room));
           store.dispatch(push("/game"));
           break;
         case Responses.CHAT_MESSAGE:

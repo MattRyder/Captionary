@@ -9,6 +9,7 @@ use web_socket::event::Event;
 #[derive(Clone)]
 pub struct Client {
     pub user_id: Option<i32>,
+    pub room_id: i32,
     pub socket_handle: WsSender,
     pub event_tx: Sender<Event>
 }
@@ -16,10 +17,10 @@ pub struct Client {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
     UserLogin { username: String },
-    JoinRoom { room_id: Option<String> },
-    ChatSent { message_text: String },
-    CaptionVote { caption_id: i32 },
-    SubmitCaption { round_id: i32, caption_text: String },
+    JoinRoom { access_token: String, room_name: Option<String> },
+    ChatSent { access_token: String, message_text: String },
+    CaptionVote { access_token: String, caption_id: i32 },
+    SubmitCaption { access_token: String, round_id: i32, caption_text: String },
 }
 
 impl fmt::Debug for Client {
@@ -44,24 +45,25 @@ impl Handler for Client {
     fn on_close(&mut self, code: CloseCode, reason: &str) {
         println!("Goodbye to peer: {:#?}, reason: {}", code, reason);
 
-        let client = self.clone();
-        let message = Event::OnClientDisconnected(client);
+        let message = Event::OnClientDisconnected { 
+            connection_id: self.socket_handle.connection_id()
+        };
+
         self.event_tx.send(message).unwrap();
     }
 
     fn on_message(&mut self, msg: Message) -> Result<()> {
-        match msg {
-            Message::Text(message_text) => {
-                let client = self.clone();
-
-                let client_message : ClientMessage = de::from_str(&message_text).unwrap();
-                let event = Event::OnMessageSent(client, client_message);
+        if let Message::Text(message_text) = msg {
+            if let Ok(client_message) = de::from_str(&message_text) {
+                let event = Event::OnMessageSent { 
+                    connection_id: self.socket_handle.connection_id(),
+                    client_message: client_message
+                };
 
                 self.event_tx.send(event).unwrap();
-
-                Ok(())
             }
-            Message::Binary(_) => Ok(()),
         }
+
+        Ok(())
     }
 }

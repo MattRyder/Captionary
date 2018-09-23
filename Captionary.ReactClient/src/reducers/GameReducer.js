@@ -12,7 +12,12 @@ const GameReducer = (state = InitialState, action) => {
     case ActionTypes.USER_LOGIN_RESPONSE_ACTION:
       return Object.assign({}, state, { user: action.payload.user });
     case ActionTypes.JOIN_ROOM_RESPONSE_ACTION:
-      return Object.assign({}, state, { room: action.payload.room });
+      return Object.assign({}, state, { 
+        user: { 
+          ...state.user,
+          token: action.payload.updatedAccessToken
+        }, 
+        room: action.payload.room });
     case ActionTypes.CHAT_MESSAGE_RESPONSE_ACTION:
       let id = action.payload.userId === state.user.id ? 0 : action.payload.userId;
       var msg = new Message({

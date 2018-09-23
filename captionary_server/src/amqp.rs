@@ -191,7 +191,7 @@ impl Client {
                             Duration::milliseconds(first_game_delay_sec * 1000),
                         );
 
-                        let ws_event = Event::OnGameStart(room_id, game);
+                        let ws_event = Event::OnGameStart { room_id, game };
                         ws_event_tx.send(ws_event).unwrap();
                     }
                     Message::StartRoundForGame(game_id) => {
@@ -203,7 +203,7 @@ impl Client {
                             Duration::milliseconds(submission_length_sec * 1000),
                         );
 
-                        let ws_event = Event::OnRoundStart(game.id, round);
+                        let ws_event = Event::OnRoundStart { room_id: game.room_id, round };
                         ws_event_tx.send(ws_event).unwrap();
                     }
                     Message::SubmissionClosed(round_id) => {
@@ -215,7 +215,8 @@ impl Client {
                             Duration::milliseconds(voting_length_sec * 1000),
                         );
 
-                        let ws_event = Event::OnSubmissionClosed(round.game_id, round);
+                        let game = Game::find(&connection, round.game_id).unwrap();
+                        let ws_event = Event::OnSubmissionClosed{ room_id: game.room_id, round };
                         ws_event_tx.send(ws_event).unwrap();
                     }
                     Message::RoundFinished(round_id) => {
@@ -237,7 +238,7 @@ impl Client {
                             // )
                         }
 
-                        let ws_event = Event::OnRoundFinished(round.game_id, round);
+                        let ws_event = Event::OnRoundFinished { room_id: game.room_id, round };
                         ws_event_tx.send(ws_event).unwrap();
                     }
                 }

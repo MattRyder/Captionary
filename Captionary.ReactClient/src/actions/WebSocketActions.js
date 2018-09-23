@@ -41,9 +41,9 @@ export const JoinRoomAction = roomId => ({
   }
 });
 
-export const JoinRoomResponseAction = room => ({
+export const JoinRoomResponseAction = (updatedAccessToken, room) => ({
   type: JOIN_ROOM_RESPONSE_ACTION,
-  payload: { room: room }
+  payload: { updatedAccessToken: updatedAccessToken, room: room }
 });
 
 export const ChatMessageAction = messageText => ({
