@@ -20,6 +20,7 @@ use web_socket::state::State;
 #[serde(tag = "type")]
 pub enum ServerMessage {
     UserLoginResponse {
+        access_token: String,
         user: User,
     },
     UserJoinedRoomResponse {
@@ -74,18 +75,23 @@ impl Server {
     pub fn handle_incoming_message(&mut self, connection_id: &u32, client_message: &ClientMessage) {
         match client_message {
             ClientMessage::UserLogin { username } => {
-                self.client_state
-                    .on_user_login(connection_id, username.to_string());
+                self.client_state.on_user_login(connection_id, username.to_string());
             }
             ClientMessage::JoinRoom { access_token, room_name } => {
-                if let Some(room_player_count) = self.client_state.on_join_room(connection_id, room_name)
-                {
-                    if room_player_count.player_count == 2 {
-                        self.amqp_client.publish(
-                            AmqpMessage::StartGameForRoom(room_player_count.room_id),
-                            Duration::milliseconds(5 * 1000),
-                        );
+                if let Some(payload) = Token::decode(&access_token) {
+                    if let Some(_uid) = payload.get("uid") {
+                        if let Some(room_player_count) = self.client_state.on_join_room(connection_id, room_name)
+                        {
+                            if room_player_count.player_count == 2 {
+                                self.amqp_client.publish(
+                                    AmqpMessage::StartGameForRoom(room_player_count.room_id),
+                                    Duration::milliseconds(5 * 1000),
+                                );
+                            }
+                        }
                     }
+
+                    
                 }
                 
             }
@@ -94,15 +100,16 @@ impl Server {
                     .on_caption_submit(connection_id, round_id.clone(), caption_text);
             }
             ClientMessage::ChatSent { access_token, message_text } => {
-                let user_data = Token::decode(access_token).unwrap();
+                if let Some(payload) = Token::decode(&access_token) {
+                    if let Some(_uid) = payload.get("uid") {
+                        if let Some(rid) = payload.get("rid") {
+                            let room_id = rid.as_str().unwrap();
+                            let room_id = room_id.parse::<i32>().unwrap();
 
-                if let Some(room_id) = user_data.get("rid") {
-                    let room_id = room_id.as_str().unwrap();
-                    let room_id = room_id.parse::<i32>().unwrap();
-
-                    self.client_state.on_chat_message(connection_id, &room_id, message_text.to_string());
+                            self.client_state.on_chat_message(connection_id, &room_id, message_text.to_string());
+                        }
+                    }
                 }
-   
             }
             ClientMessage::CaptionVote { access_token, caption_id } => {
                 self.client_state

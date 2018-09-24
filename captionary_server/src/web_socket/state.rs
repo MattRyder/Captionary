@@ -69,9 +69,10 @@ impl State {
                 client.user_id = Some(user.id);
             }
 
+            let access_token = user.update_token();
             self.send_message_to_client(
                     connection_id,
-                    &ServerMessage::UserLoginResponse { user });
+                    &ServerMessage::UserLoginResponse { access_token, user });
         
         }
     }

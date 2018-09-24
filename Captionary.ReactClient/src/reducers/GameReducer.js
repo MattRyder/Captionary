@@ -4,24 +4,28 @@ import { Message } from 'react-chat-ui';
 const InitialState = {
   user: null,
   room: null,
+  accessToken: null,
   chatMessages: [],
 };
 
 const GameReducer = (state = InitialState, action) => {
   switch (action.type) {
     case ActionTypes.USER_LOGIN_RESPONSE_ACTION:
-      return Object.assign({}, state, { user: action.payload.user });
+      return Object.assign({}, state, { 
+        accessToken: action.payload.accessToken,
+        user: action.payload.user
+      });
     case ActionTypes.JOIN_ROOM_RESPONSE_ACTION:
       return Object.assign({}, state, { 
-        user: { 
-          ...state.user,
-          token: action.payload.updatedAccessToken
-        }, 
-        room: action.payload.room });
+        accessToken: action.payload.accessToken,
+        room: action.payload.room
+      });
     case ActionTypes.CHAT_MESSAGE_RESPONSE_ACTION:
       let id = action.payload.userId === state.user.id ? 0 : action.payload.userId;
       var msg = new Message({
-        id: id, senderName: action.payload.username, message: action.payload.messageText
+        id: id,
+        senderName: action.payload.username,
+        message: action.payload.messageText
       });
       return {
         ...state,

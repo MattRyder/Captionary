@@ -28,6 +28,8 @@ impl Token {
 
         let payload = json!(payload);
 
+        println!("Encoding JWT: {:?}", &payload);
+
         encode(header, &jwt_secret, &payload, Algorithm::HS256).ok()
     }
 

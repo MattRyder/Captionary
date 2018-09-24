@@ -51,7 +51,7 @@ impl User {
 
     pub fn create<'a>(conn: &PgConnection, user_params: &UserParams) -> Option<User> {
         let new_user = NewUser {
-            token: &Token::encode(HashMap::new()).unwrap(),
+            token: &String::new(),
             username: &user_params.username,
             ip_address: &("127.0.0.1".into()),
         };

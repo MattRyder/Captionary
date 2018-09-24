@@ -27,9 +27,9 @@ export const UserLoginAction = username => ({
   }
 });
 
-export const UserLoginResponseAction = user => ({
+export const UserLoginResponseAction = (accessToken, user) => ({
   type: USER_LOGIN_RESPONSE_ACTION,
-  payload: { user: user }
+  payload: { accessToken: accessToken, user: user }
 });
 
 export const JoinRoomAction = roomId => ({
@@ -43,7 +43,7 @@ export const JoinRoomAction = roomId => ({
 
 export const JoinRoomResponseAction = (updatedAccessToken, room) => ({
   type: JOIN_ROOM_RESPONSE_ACTION,
-  payload: { updatedAccessToken: updatedAccessToken, room: room }
+  payload: { accessToken: updatedAccessToken, room: room }
 });
 
 export const ChatMessageAction = messageText => ({
