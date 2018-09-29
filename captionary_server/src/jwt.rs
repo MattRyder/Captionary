@@ -28,8 +28,6 @@ impl Token {
 
         let payload = json!(payload);
 
-        println!("Encoding JWT: {:?}", &payload);
-
         encode(header, &jwt_secret, &payload, Algorithm::HS256).ok()
     }
 
@@ -98,5 +96,13 @@ mod tests {
 
         assert!(tok["uid"].as_str().is_some());
         assert_eq!(tok["uid"].as_str(), Some("1"));
+    }
+
+    #[test]
+    fn decode_should_detect_invalid_token() {
+        dotenv().ok();
+
+        let payload = Token::decode(&"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c".into());
+        assert_eq!(payload, None);
     }
 }

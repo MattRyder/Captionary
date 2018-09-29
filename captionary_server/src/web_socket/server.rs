@@ -80,9 +80,8 @@ impl Server {
             ClientMessage::JoinRoom { access_token, room_name } => {
                 if let Some(payload) = Token::decode(&access_token) {
                     if let Some(_uid) = payload.get("uid") {
-                        if let Some(room_player_count) = self.client_state.on_join_room(connection_id, room_name)
-                        {
-                            if room_player_count.player_count == 2 {
+                        if let Some(room_player_count) = self.client_state.on_join_room(connection_id, room_name) {
+                            if room_player_count.player_count == 1 {
                                 self.amqp_client.publish(
                                     AmqpMessage::StartGameForRoom(room_player_count.room_id),
                                     Duration::milliseconds(5 * 1000),
@@ -90,14 +89,20 @@ impl Server {
                             }
                         }
                     }
-
-                    
                 }
-                
+
             }
-            ClientMessage::SubmitCaption { access_token, round_id,  caption_text } => {
-                self.client_state
-                    .on_caption_submit(connection_id, round_id.clone(), caption_text);
+            ClientMessage::SubmitCaption { access_token, caption_text } => {
+                if let Some(payload) = Token::decode(&access_token) {
+                    if let (Some(uid), Some(rid)) = (payload.get("uid"), payload.get("rid")) {
+                        let user_id = uid.as_str().unwrap().parse::<i32>().unwrap();
+                        let room_id = rid.as_str().unwrap().parse::<i32>().unwrap();
+
+                        self.client_state
+                            .on_caption_submit(connection_id, &room_id, user_id, caption_text);
+                    }
+                }
+
             }
             ClientMessage::ChatSent { access_token, message_text } => {
                 if let Some(payload) = Token::decode(&access_token) {

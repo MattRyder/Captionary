@@ -2,17 +2,21 @@
 
 use chrono::{NaiveDateTime, Utc};
 use diesel;
+use diesel::ExpressionMethods;
 use diesel::pg::PgConnection;
 use diesel::prelude::{QueryDsl, RunQueryDsl};
 use diesel::result::Error;
 use diesel::{BelongingToDsl, SaveChangesDsl};
 use models::round::Round;
+use models::room::Room;
+
 use schema::games;
 
 use std::env;
 
-#[derive(Identifiable, Serialize, Deserialize, Queryable, Debug)]
+#[derive(Associations, Identifiable, Serialize, Deserialize, Queryable, Debug)]
 #[table_name = "games"]
+#[belongs_to(Room)]
 pub struct Game {
     pub id: i32,
     pub room_id: i32,
@@ -44,6 +48,15 @@ impl Game {
         diesel::insert_into(games::table)
             .values(&new_game)
             .get_result::<Game>(conn)
+            .ok()
+    }
+
+    pub fn get_last_round(&self, connection: &PgConnection) -> Option<Round> {
+        use schema::rounds::dsl::id;
+
+        Round::belonging_to(self)
+            .order(id.desc())
+            .first(connection)
             .ok()
     }
 

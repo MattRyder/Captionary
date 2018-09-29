@@ -1,29 +1,22 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Button } from 'reactstrap';
 import connect from 'react-redux/lib/connect/connect';
 import Input from '../../Input/Input';
-// import { SubmitCaptionAction } from '../../../actions/SubmitCaptionAction';
+import { SubmitCaptionAction } from '../../../actions/WebSocketActions';
 
 import './CaptionInputForm.css';
 
-const mapStateToProps = (state) => {
-    return {
-        sessionInfo: state.game.sessionInfo,
-        roundId: state.round.roundId
-    };
-};
-
 const mapDispatchToProps = (dispatch) => {
-    // return {
-    //     SubmitCaptionAction: (roomId, roundId, captionText) =>
-    //         dispatch(SubmitCaptionAction(roomId, roomId, captionText))
-    // }
+    return {
+        SubmitCaptionAction: (captionText) => dispatch(SubmitCaptionAction(captionText))
+    }
 }
 
 /**
  * A component that records/resets the caption
  */
-class _CaptionInputForm extends React.Component {
+class CaptionInputFormComponent extends React.Component {
 
     constructor(props) {
         super(props)
@@ -38,12 +31,13 @@ class _CaptionInputForm extends React.Component {
     }
 
     handleCaptionTextChanged(e) {
-        this.setState({ captionText: e.target.value });
+        if(this.props.canSubmitCaption) {
+            this.setState({ captionText: e.target.value });
+        }
     }
 
     handleSubmit(e) {
-        // this.props.SubmitCaptionAction(
-        //     this.props.sessionInfo.roomId, this.props.roundId, this.state.captionText);
+        this.props.SubmitCaptionAction(this.state.captionText);
     }
 
     clearState() {
@@ -58,10 +52,14 @@ class _CaptionInputForm extends React.Component {
                         onChange={this.handleCaptionTextChanged}
                         value={this.state.captionText} />
                 </div>
-                <Button color="primary" block onClick={this.handleSubmit}>
+                <Button color="primary" block 
+                        disabled={!this.props.canSubmitCaption} 
+                        onClick={this.handleSubmit}>
                     Submit
             </Button>
-                <Button color="secondary" block onClick={this.clearState}>
+                <Button color="secondary" block 
+                        disabled={!this.props.canSubmitCaption}
+                        onClick={this.clearState}>
                     Reset Input
             </Button>
             </div>
@@ -70,5 +68,9 @@ class _CaptionInputForm extends React.Component {
     }
 };
 
-const CaptionInputForm = connect(mapStateToProps, mapDispatchToProps)(_CaptionInputForm);
+CaptionInputFormComponent.PropTypes = {
+    canSubmitCaption: PropTypes.bool
+};
+
+const CaptionInputForm = connect(null, mapDispatchToProps)(CaptionInputFormComponent);
 export default CaptionInputForm;

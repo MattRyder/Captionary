@@ -4,7 +4,10 @@ import {
   WebSocketInitializedAction,
   UserLoginResponseAction,
   JoinRoomResponseAction,
-  ChatMessageResponseAction
+  ChatMessageResponseAction,
+  GameStartedResponseAction,
+  RoundStartedResponseAction,
+  CaptionSubmittedResponseAction
 } from "../actions/WebSocketActions";
 
 import Sockette from "sockette";
@@ -16,7 +19,10 @@ const ECONNREFUSED = 1006;
 const Responses = {
   USER_LOGIN: "UserLoginResponse",
   JOIN_ROOM: "UserJoinedRoomResponse",
-  CHAT_MESSAGE: "ChatMessageResponse"
+  CHAT_MESSAGE: "ChatMessageResponse",
+  GAME_STARTED: "GameStartedResponse",
+  ROUND_STARTED: "RoundStartResponse",
+  SUBMIT_CAPTION: "CaptionSubmittedResponse"
 };
 
 const authenticateMessage = (payload, accessToken) => {
@@ -34,12 +40,8 @@ export const WebSocketMiddleware = store => {
     let accessToken = store.getState().game.accessToken;
 
     switch (action.type) {
-      case ActionTypes.WEBSOCKET_INITIALIZED_ACTION:
-        break;
       case ActionTypes.USER_LOGIN_ACTION:
         socketHandle.send(JSON.stringify(action.payload));
-        break;
-      case ActionTypes.USER_LOGIN_RESPONSE_ACTION:
         break;
       case ActionTypes.JOIN_ROOM_ACTION:
         socketHandle.send(JSON.stringify(authenticateMessage(action.payload, accessToken)));
@@ -47,8 +49,10 @@ export const WebSocketMiddleware = store => {
       case ActionTypes.CHAT_MESSAGE_ACTION:
         socketHandle.send(JSON.stringify(authenticateMessage(action.payload, accessToken)));
         break;
+      case ActionTypes.SUBMIT_CAPTION_ACTION:
+        socketHandle.send(JSON.stringify(authenticateMessage(action.payload, accessToken)));
+        break;
       default:
-        console.log("Not covered by WebSocketMiddleware: " + action.type);
         break;
     }
 
@@ -76,6 +80,15 @@ export const WebSocketInit = store => {
         case Responses.CHAT_MESSAGE:
           store.dispatch(ChatMessageResponseAction(
             jsonResponse.user_id, jsonResponse.username, jsonResponse.message_text));
+          break;
+        case Responses.GAME_STARTED:
+          store.dispatch(GameStartedResponseAction(jsonResponse.game));
+          break;
+        case Responses.ROUND_STARTED:
+          store.dispatch(RoundStartedResponseAction(jsonResponse.round));
+          break;
+        case Responses.SUBMIT_CAPTION:
+          store.dispatch(CaptionSubmittedResponseAction(jsonResponse.saved, jsonResponse.errors))
           break;
         default:
           console.log("Not covered: " + jsonResponse);

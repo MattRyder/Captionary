@@ -9,9 +9,10 @@ use diesel::sql_query;
 use names::{Generator, Name};
 
 use models::user::User;
+use models::game::Game;
+
 use schema::rooms;
 use schema::rooms::dsl::rooms as rooms_repo;
-use schema::rooms::dsl::*;
 
 const ROOM_MAX_CAPACITY: i64 = 8;
 
@@ -42,7 +43,13 @@ impl Room {
             .expect("Failed to load Room list_all")
     }
 
-    pub fn find(conn: &PgConnection, room_name: &String) -> Result<Room, Error> {
+    pub fn find_by_id(conn: &PgConnection, room_id: &i32) -> Result<Room, Error> {
+        rooms::table
+            .filter(rooms::id.eq(room_id))
+            .first::<Room>(conn)
+    }
+    
+    pub fn find_by_name(conn: &PgConnection, room_name: &String) -> Result<Room, Error> {
         rooms::table
             .filter(rooms::name.eq(room_name))
             .first::<Room>(conn)
@@ -90,6 +97,15 @@ impl Room {
             .unwrap()
     }
 
+    pub fn get_last_game(&self, connection: &PgConnection) -> Option<Game> {
+        use schema::games::dsl::id;
+        
+        Game::belonging_to(self)
+            .order(id.desc())
+            .first(connection)
+            .ok()
+    }
+
     pub fn find_available_room(conn: &PgConnection) -> Room {
         let find_room_sql = "
             SELECT name
@@ -107,7 +123,7 @@ impl Room {
 
         let query_result : Vec<AvailableRoom> = sql_query(find_room_sql).load(conn).unwrap();
         if let Some(available_room) = query_result.first() {
-            if let Ok(room) = Room::find(conn, &available_room.name) {
+            if let Ok(room) = Room::find_by_name(conn, &available_room.name) {
                 chosen_room = Some(room);
             }
         }
@@ -119,6 +135,8 @@ impl Room {
     }
 
     fn is_name_available(conn: &PgConnection, room_name: &String) -> bool {
+        use schema::rooms::dsl::name;
+        
         let count: i64 = rooms::table
             .filter(name.eq(room_name))
             .count()

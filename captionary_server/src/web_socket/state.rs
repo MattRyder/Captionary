@@ -73,7 +73,6 @@ impl State {
             self.send_message_to_client(
                     connection_id,
                     &ServerMessage::UserLoginResponse { access_token, user });
-        
         }
     }
 
@@ -82,7 +81,7 @@ impl State {
 
         // Find a room for the user, if given, try to join room_name:
         let room = match room_name {
-            Some(room_name) => Room::find(&connection, &room_name).unwrap(),
+            Some(room_name) => Room::find_by_name(&connection, &room_name).unwrap(),
             None => Room::find_available_room(&connection)
         };
 
@@ -122,20 +121,22 @@ impl State {
         return None;
     }
 
-    pub fn on_caption_submit(&self, connection_id: &u32, round_id: i32, caption_text: &String) {
+    pub fn on_caption_submit(&self, connection_id: &u32, room_id: &i32, user_id: i32, caption_text: &String) {
         let connection = self.get_db_connection();
 
-        if let Some(client) = self.connection_client_map.get(connection_id) {
-            if client.user_id.is_none() {
-                return;
+        // Get round for room:
+        if let Ok(room) = Room::find_by_id(&connection, room_id) {
+            if let Some(game) = room.get_last_game(&connection) {
+                if let Some(round) = game.get_last_round(&connection) {
+                    Caption::create(&connection, round.id, user_id, caption_text);
+                }
             }
-
-            let _caption = Caption::create(&connection, round_id, client.user_id.unwrap(), caption_text);
-
-            self.send_message_to_client(
-                connection_id,
-                &ServerMessage::CaptionSubmittedResponse { saved: true, errors: None })
         }
+
+
+        self.send_message_to_client(
+            connection_id,
+            &ServerMessage::CaptionSubmittedResponse { saved: true, errors: None })
     }
 
     pub fn on_submission_closed(&self, room_id: &i32, round: Round) {

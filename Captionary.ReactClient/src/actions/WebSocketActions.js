@@ -3,12 +3,16 @@ import {
   USER_LOGIN_ACTION,
   JOIN_ROOM_ACTION,
   CHAT_MESSAGE_ACTION,
+  SUBMIT_CAPTION_ACTION,
+  ROUND_STARTED_RESPONSE_ACTION,
 } from "../constants/ActionTypes";
 
 import {
   USER_LOGIN_RESPONSE_ACTION,
   JOIN_ROOM_RESPONSE_ACTION,
-  CHAT_MESSAGE_RESPONSE_ACTION
+  CHAT_MESSAGE_RESPONSE_ACTION,
+  GAME_STARTED_RESPONSE_ACTION,
+  CAPTION_SUBMITTED_RESPONSE_ACTION
 } from "../constants/ActionTypes";
 
 export const WebSocketInitializedAction = socketHandle => ({
@@ -60,4 +64,26 @@ export const ChatMessageResponseAction = (userId, username, messageText) => ({
     username: username,
     messageText: messageText
   }
+});
+
+export const GameStartedResponseAction = (game) => ({
+  type: GAME_STARTED_RESPONSE_ACTION,
+  payload: { game: game }
+});
+
+export const RoundStartedResponseAction = (round) => ({
+  type: ROUND_STARTED_RESPONSE_ACTION,
+  payload: { round: round }
+});
+
+export const SubmitCaptionAction = (captionText) => ({
+  type: SUBMIT_CAPTION_ACTION,
+  payload: {
+    SubmitCaption: { caption_text: captionText }
+  }
+});
+
+export const CaptionSubmittedResponseAction = (saved, errors) => ({
+  type: CAPTION_SUBMITTED_RESPONSE_ACTION,
+  payload: { saved: saved, errors: errors }
 });

@@ -4,8 +4,11 @@ import { Message } from 'react-chat-ui';
 const InitialState = {
   user: null,
   room: null,
+  game: null,
+  round: null,
   accessToken: null,
   chatMessages: [],
+  hasSubmittedCaption: false
 };
 
 const GameReducer = (state = InitialState, action) => {
@@ -31,7 +34,12 @@ const GameReducer = (state = InitialState, action) => {
         ...state,
         chatMessages: [...state.chatMessages, msg]
       };
-
+    case ActionTypes.GAME_STARTED_RESPONSE_ACTION:
+      return Object.assign({}, state, { game: action.payload.game });
+    case ActionTypes.ROUND_STARTED_RESPONSE_ACTION:
+      return Object.assign({}, state, { round: action.payload.round });
+    case ActionTypes.CAPTION_SUBMITTED_RESPONSE_ACTION:
+      return Object.assign({}, state, { hasSubmittedCaption: action.payload.saved });
     default:
       return state;
   }

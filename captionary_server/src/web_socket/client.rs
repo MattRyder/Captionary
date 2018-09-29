@@ -20,7 +20,7 @@ pub enum ClientMessage {
     JoinRoom { access_token: String, room_name: Option<String> },
     ChatSent { access_token: String, message_text: String },
     CaptionVote { access_token: String, caption_id: i32 },
-    SubmitCaption { access_token: String, round_id: i32, caption_text: String },
+    SubmitCaption { access_token: String, caption_text: String },
 }
 
 impl fmt::Debug for Client {
