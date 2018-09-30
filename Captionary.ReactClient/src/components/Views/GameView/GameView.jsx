@@ -14,6 +14,7 @@ const mapStateToProps = state => {
     room: state.game.room,
     game: state.game.game,
     round: state.game.round,
+    captions: state.game.captions,
     hasSubmittedCaption: state.game.hasSubmittedCaption
   };
 };
@@ -36,7 +37,7 @@ class GameViewComponent extends React.Component {
     return (
       <div className="game-container">
         <div className="game">
-          {/* <CaptionCardList />, */}
+          <CaptionCardList captions={this.props.captions} />,
 
           <ImageContainer
             imageUrl={this.props.round ? this.props.round.image_url : null}

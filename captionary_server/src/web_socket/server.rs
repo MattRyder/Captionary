@@ -81,7 +81,7 @@ impl Server {
                 if let Some(payload) = Token::decode(&access_token) {
                     if let Some(_uid) = payload.get("uid") {
                         if let Some(room_player_count) = self.client_state.on_join_room(connection_id, room_name) {
-                            if room_player_count.player_count == 1 {
+                            if room_player_count.player_count >= 1 {
                                 self.amqp_client.publish(
                                     AmqpMessage::StartGameForRoom(room_player_count.room_id),
                                     Duration::milliseconds(5 * 1000),

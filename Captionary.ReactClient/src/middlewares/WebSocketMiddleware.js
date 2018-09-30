@@ -7,7 +7,8 @@ import {
   ChatMessageResponseAction,
   GameStartedResponseAction,
   RoundStartedResponseAction,
-  CaptionSubmittedResponseAction
+  CaptionSubmittedResponseAction,
+  SubmissionClosedResponseAction
 } from "../actions/WebSocketActions";
 
 import Sockette from "sockette";
@@ -22,7 +23,8 @@ const Responses = {
   CHAT_MESSAGE: "ChatMessageResponse",
   GAME_STARTED: "GameStartedResponse",
   ROUND_STARTED: "RoundStartResponse",
-  SUBMIT_CAPTION: "CaptionSubmittedResponse"
+  SUBMIT_CAPTION: "CaptionSubmittedResponse",
+  SUBMISSION_CLOSED: "SubmissionClosedResponse"
 };
 
 const authenticateMessage = (payload, accessToken) => {
@@ -32,7 +34,7 @@ const authenticateMessage = (payload, accessToken) => {
   }
 
   return payload;
-}
+};
 
 export const WebSocketMiddleware = store => {
   return next => action => {
@@ -62,8 +64,8 @@ export const WebSocketMiddleware = store => {
 
 export const WebSocketInit = store => {
   const ws = new Sockette(WEBSOCKET_HOST, {
-    timeout: 5e3,
-    maxAttempts: 10,
+    timeout: 5000,
+    maxAttempts: 3,
     onopen: e => console.log("Connected!", e),
     onmessage: e => {
       console.log("Received:", e);
@@ -89,6 +91,9 @@ export const WebSocketInit = store => {
           break;
         case Responses.SUBMIT_CAPTION:
           store.dispatch(CaptionSubmittedResponseAction(jsonResponse.saved, jsonResponse.errors))
+          break;
+        case Responses.SUBMISSION_CLOSED:
+          store.dispatch(SubmissionClosedResponseAction(jsonResponse.captions));
           break;
         default:
           console.log("Not covered: " + jsonResponse);

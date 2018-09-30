@@ -6,6 +6,7 @@ const InitialState = {
   room: null,
   game: null,
   round: null,
+  captions: null,
   accessToken: null,
   chatMessages: [],
   hasSubmittedCaption: false
@@ -40,6 +41,8 @@ const GameReducer = (state = InitialState, action) => {
       return Object.assign({}, state, { round: action.payload.round });
     case ActionTypes.CAPTION_SUBMITTED_RESPONSE_ACTION:
       return Object.assign({}, state, { hasSubmittedCaption: action.payload.saved });
+    case ActionTypes.SUBMISSION_CLOSED_RESPONSE_ACTION:
+      return Object.assign({}, state, { captions: action.payload.captions });
     default:
       return state;
   }

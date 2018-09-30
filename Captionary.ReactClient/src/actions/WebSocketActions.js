@@ -5,6 +5,7 @@ import {
   CHAT_MESSAGE_ACTION,
   SUBMIT_CAPTION_ACTION,
   ROUND_STARTED_RESPONSE_ACTION,
+  SUBMISSION_CLOSED_RESPONSE_ACTION
 } from "../constants/ActionTypes";
 
 import {
@@ -86,4 +87,9 @@ export const SubmitCaptionAction = (captionText) => ({
 export const CaptionSubmittedResponseAction = (saved, errors) => ({
   type: CAPTION_SUBMITTED_RESPONSE_ACTION,
   payload: { saved: saved, errors: errors }
+});
+
+export const SubmissionClosedResponseAction = (captions) => ({
+  type: SUBMISSION_CLOSED_RESPONSE_ACTION,
+  payload: { captions: captions }
 });

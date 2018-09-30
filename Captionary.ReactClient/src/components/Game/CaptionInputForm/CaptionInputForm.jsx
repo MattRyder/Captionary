@@ -68,7 +68,7 @@ class CaptionInputFormComponent extends React.Component {
     }
 };
 
-CaptionInputFormComponent.PropTypes = {
+CaptionInputFormComponent.propTypes = {
     canSubmitCaption: PropTypes.bool
 };
 
