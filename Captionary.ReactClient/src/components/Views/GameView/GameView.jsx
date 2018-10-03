@@ -7,10 +7,13 @@ import CaptionInputForm from "../../Game/CaptionInputForm/CaptionInputForm";
 import CaptionCardList from "../../Game/CaptionCardList/CaptionCardList";
 import ChatContainer from "../../Game/ChatContainer/ChatContainer";
 
+import GameState from "../../../constants/GameState";
+
 import "./GameView.css";
 
 const mapStateToProps = state => {
-  return { 
+  return {
+    gameState: state.game.gameState,
     room: state.game.room,
     game: state.game.game,
     round: state.game.round,
@@ -27,24 +30,53 @@ const mapDispatchToProps = dispatch => {
 
 class GameViewComponent extends React.Component {
 
+  constructor(props) {
+    super(props);
+
+    this.isImageContainerVisible = this.isImageContainerVisible.bind(this);
+    this.isCaptionInputVisible = this.isCaptionInputVisible.bind(this);
+    this.isCardListVisible = this.isCardListVisible.bind(this);
+  }
+
   componentDidMount() {
     if(!this.props.room) {
       this.props.redirectToHome();
     }
   }
 
+  isImageContainerVisible() {
+    return this.props.gameState === GameState.ROUND_STARTING ||
+            this.props.gameState === GameState.SUBMISSION_CLOSED;
+  }
+
+  isCaptionInputVisible() {
+    return this.props.gameState === GameState.ROUND_STARTING;
+  }
+
+  isCardListVisible() {
+    return this.props.gameState === GameState.SUBMISSION_CLOSED ||
+            this.props.gameState === GameState.ROUND_FINISHED;
+  }
+
   render() {
     return (
       <div className="game-container">
         <div className="game">
-          <CaptionCardList captions={this.props.captions} />,
+          { this.isImageContainerVisible() ? (
+              <ImageContainer
+                imageUrl={this.props.round ? this.props.round.image_url : null}
+                imageCentered={true} />
+            ) : null }
 
-          <ImageContainer
-            imageUrl={this.props.round ? this.props.round.image_url : null}
-            imageCentered={true} />
+          { this.isCardListVisible() ? (
+              <CaptionCardList captions={this.props.captions} />
+            ) : null }
 
-          <CaptionInputForm
-            canSubmitCaption={!this.props.hasSubmittedCaption} />
+          { this.isCaptionInputVisible() ? (
+            <CaptionInputForm
+              canSubmitCaption={!this.props.hasSubmittedCaption} />
+            ) : null }
+          }
         </div>
         <div className="game-chat">
           <ChatContainer />

@@ -5,7 +5,8 @@ import {
   CHAT_MESSAGE_ACTION,
   SUBMIT_CAPTION_ACTION,
   ROUND_STARTED_RESPONSE_ACTION,
-  SUBMISSION_CLOSED_RESPONSE_ACTION
+  SUBMISSION_CLOSED_RESPONSE_ACTION,
+  SUBMIT_VOTE_ACTION,
 } from "../constants/ActionTypes";
 
 import {
@@ -13,7 +14,8 @@ import {
   JOIN_ROOM_RESPONSE_ACTION,
   CHAT_MESSAGE_RESPONSE_ACTION,
   GAME_STARTED_RESPONSE_ACTION,
-  CAPTION_SUBMITTED_RESPONSE_ACTION
+  CAPTION_SUBMITTED_RESPONSE_ACTION,
+  VOTE_SUBMITTED_RESPONSE_ACTION
 } from "../constants/ActionTypes";
 
 export const WebSocketInitializedAction = socketHandle => ({
@@ -93,3 +95,15 @@ export const SubmissionClosedResponseAction = (captions) => ({
   type: SUBMISSION_CLOSED_RESPONSE_ACTION,
   payload: { captions: captions }
 });
+
+export const SubmitVoteAction = (captionId) => ({
+  type: SUBMIT_VOTE_ACTION,
+  payload: { 
+    CaptionVote: { caption_id: captionId }
+  }
+});
+
+export const VoteSubmittedResponseAction = (captionId) => ({
+  type: VOTE_SUBMITTED_RESPONSE_ACTION,
+  payload: { captionId: captionId }
+})

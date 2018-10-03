@@ -8,7 +8,8 @@ import {
   GameStartedResponseAction,
   RoundStartedResponseAction,
   CaptionSubmittedResponseAction,
-  SubmissionClosedResponseAction
+  SubmissionClosedResponseAction,
+  VoteSubmittedResponseAction
 } from "../actions/WebSocketActions";
 
 import Sockette from "sockette";
@@ -24,7 +25,8 @@ const Responses = {
   GAME_STARTED: "GameStartedResponse",
   ROUND_STARTED: "RoundStartResponse",
   SUBMIT_CAPTION: "CaptionSubmittedResponse",
-  SUBMISSION_CLOSED: "SubmissionClosedResponse"
+  SUBMISSION_CLOSED: "SubmissionClosedResponse",
+  VOTE_SUBMITTED: "VoteSubmittedResponse"
 };
 
 const authenticateMessage = (payload, accessToken) => {
@@ -52,6 +54,9 @@ export const WebSocketMiddleware = store => {
         socketHandle.send(JSON.stringify(authenticateMessage(action.payload, accessToken)));
         break;
       case ActionTypes.SUBMIT_CAPTION_ACTION:
+        socketHandle.send(JSON.stringify(authenticateMessage(action.payload, accessToken)));
+        break;
+      case ActionTypes.SUBMIT_VOTE_ACTION:
         socketHandle.send(JSON.stringify(authenticateMessage(action.payload, accessToken)));
         break;
       default:
@@ -94,6 +99,9 @@ export const WebSocketInit = store => {
           break;
         case Responses.SUBMISSION_CLOSED:
           store.dispatch(SubmissionClosedResponseAction(jsonResponse.captions));
+          break;
+        case Responses.VOTE_SUBMITTED:
+          store.dispatch(VoteSubmittedResponseAction(jsonResponse.vote.caption_id));
           break;
         default:
           console.log("Not covered: " + jsonResponse);
